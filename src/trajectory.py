@@ -33,6 +33,7 @@ def ode_equations(t,y):
 
     # Determine density as a fcn of height
     rho = determine_density(h)
+    print(rho)
 
     # Init
     global util_values
@@ -49,6 +50,7 @@ def ode_equations(t,y):
 
         # Phase
         util_values["phase"] = 1
+        Cl = 0
 
         # Determine TVC correction
         util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
@@ -70,6 +72,7 @@ def ode_equations(t,y):
 
         # Phase
         util_values["phase"] = 2
+        Cl = 0
      
         # Determine TVC correction
         util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
@@ -91,6 +94,7 @@ def ode_equations(t,y):
 
         # Phase
         util_values["phase"] = 3
+        Cl = 0
 
         # Determine TVC correction
         util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
@@ -111,6 +115,7 @@ def ode_equations(t,y):
 
         # Phase
         util_values["phase"] = 4
+        Cl = 0.3
         
         # Determine TVC correction
         util_values['psi'], util_values['theta_error'] = pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
@@ -125,15 +130,21 @@ def ode_equations(t,y):
 
         # EOMS
         v_dot = (F*np.cos(util_values['psi']-theta))/m - (Cd*rho*v**2*Ap)/(2*m) - g*np.sin(theta)
-        theta_dot = (F*np.sin(util_values['psi']-theta))/(m*v) + (Cl*rho*v*Ap)/(2*m) - (g*np.cos(theta))/v
+        theta_dot = ((F*np.sin(util_values['psi']-theta))/(m*v) + (Cl*rho*v*Ap)/(2*m) - (g*np.cos(theta))/v)
         h_dot = v*np.sin(theta)
         x_dot = v*np.cos(theta)
+
+        # print("First Term:", (F*np.sin(util_values['psi']-theta))/(m*v))
+        # print("Second Term:", (Cl*rho*v*Ap)/(2*m))
+        # print("Third Term:",(g*np.cos(theta))/v)
+        # print("Overall:", theta_dot)
 
     # Post descent
     else:
 
         # Phase
         util_values["phase"] = 5
+        Cl = 0.3
 
         # Determine TVC correction
         util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
@@ -188,7 +199,7 @@ if __name__ == '__main__':
     diam = 3.05
     Ap = np.pi/(4*diam**2)
     Cd = 0.3
-    Cl = 0
+    Cl = 0.3
 
     # Masses
     mprop_ascent = 111130
@@ -218,10 +229,10 @@ if __name__ == '__main__':
     # Controller
     #------------------------------------------------
     # PID
-    Kp = 500
-    Ki = 0
+    Kp = 0
+    Ki = 3
     Kd = 2
-    desired_flight_path_angle = 0
+    desired_flight_path_angle = 90
     bounds = 90
     pidController = Controller(Kp, Ki, Kd, desired_flight_path_angle, bounds)
 
@@ -299,72 +310,100 @@ if __name__ == '__main__':
     # Plotting
     #------------------------------------------------
     # Create subplots with 4 rows and 1 column
-    fig, axs = plt.subplots(7, 1, figsize=(10, 24))
+    fig, axs = plt.subplots(9, 1, figsize=(10, 32))
+    fig_num = -1
 
     # Plot Height
-    axs[0].plot(save_values['t'], save_values['phase'])
-    axs[0].set_xlabel('Time (s)')
-    axs[0].set_ylabel('Phase')
-    axs[0].set_title('Phase')
-    axs[0].grid(True)
-    axs[0].set_xlim(0, save_values['t'][last_index_positive])
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['phase'])
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Phase')
+    axs[fig_num].set_title('Phase')
+    axs[fig_num].grid(True)
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     # Plot Height
-    axs[1].plot(save_values['t'], save_values['h'])
-    axs[1].set_xlabel('Time (s)')
-    axs[1].set_ylabel('Height (km)')
-    axs[1].set_title('Height')
-    axs[1].grid(True)
-    axs[1].set_xlim(0, save_values['t'][last_index_positive])
-    axs[1].set_ylim(0, max(save_values['h']))
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['h'])
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Height (km)')
+    axs[fig_num].set_title('Height')
+    axs[fig_num].grid(True)
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    axs[fig_num].set_ylim(0, max(save_values['h']))
 
     # Plot Downrange
-    axs[2].plot(save_values['t'], save_values['x'])
-    axs[2].set_xlabel('Time (s)')
-    axs[2].set_ylabel('Distance (km)')
-    axs[2].set_title('Downrange')
-    axs[2].grid(True)
-    axs[2].set_xlim(0, save_values['t'][last_index_positive])
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['x'])
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Distance (km)')
+    axs[fig_num].set_title('Downrange')
+    axs[fig_num].grid(True)
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     # Plot Velocity
-    axs[3].plot(save_values['t'], save_values['v'])
-    axs[3].set_xlabel('Time (s)')
-    axs[3].set_ylabel('Velocity (km/s)')
-    axs[3].set_title('Velocity')
-    axs[3].grid(True)
-    axs[3].set_xlim(0, save_values['t'][last_index_positive])
-    axs[3].set_ylim(0, max(save_values['v']))
+    fig_num = fig_num + 1    
+    axs[fig_num].plot(save_values['t'], save_values['v'])
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Velocity (km/s)')
+    axs[fig_num].set_title('Velocity')
+    axs[fig_num].grid(True)
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    axs[fig_num].set_ylim(0, max(save_values['v']))
 
     # Plot Angles
-    axs[4].plot(save_values['t'], save_values['theta'], label="$\\theta$")
-    axs[4].plot(save_values['t'], save_values['theta_error'], label="$\\theta_e$")
-    axs[4].plot(save_values['t'], save_values['psi'], label="$\\psi$")
-    axs[4].set_xlabel('Time (s)')
-    axs[4].set_ylabel('Angle (deg)')
-    axs[4].set_title('Flight Angles')
-    axs[4].grid(True)
-    axs[4].legend()
-    axs[4].set_xlim(0, save_values['t'][last_index_positive])
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['theta'], label="$\\theta$")
+    axs[fig_num].plot(save_values['t'], save_values['theta_error'], label="$\\theta_e$")
+    axs[fig_num].plot(save_values['t'], save_values['psi'], label="$\\psi$")
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Angle (deg)')
+    axs[fig_num].set_title('Flight Angles')
+    axs[fig_num].grid(True)
+    axs[fig_num].legend()
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     # Mass
-    axs[5].plot(save_values['t'], save_values['m'], label="Total Mass")
-    axs[5].plot(save_values['t'], save_values['mp_descent'], label="Descent Propellant Mass")
-    axs[5].plot(save_values['t'], save_values['mp_ascent'], label="Ascent Propellant Mass")
-    axs[5].set_xlabel('Time (s)')
-    axs[5].set_ylabel('Mass [MT]')
-    axs[5].set_title('Mass')
-    axs[5].grid(True)
-    axs[5].legend()
-    axs[5].set_xlim(0, save_values['t'][last_index_positive])
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['m'], label="Total Mass")
+    axs[fig_num].plot(save_values['t'], save_values['mp_descent'], label="Descent Propellant Mass")
+    axs[fig_num].plot(save_values['t'], save_values['mp_ascent'], label="Ascent Propellant Mass")
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Mass [MT]')
+    axs[fig_num].set_title('Mass')
+    axs[fig_num].grid(True)
+    axs[fig_num].legend()
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     # Thrust
-    axs[6].plot(save_values['t'], save_values['F'], label="Thrust")
-    axs[6].set_xlabel('Time (s)')
-    axs[6].set_ylabel('Thrust (kN)')
-    axs[6].set_title('Thrust')
-    axs[6].grid(True)
-    axs[6].legend()
-    axs[6].set_xlim(0, save_values['t'][last_index_positive])
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['F'], label="Thrust")
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Thrust (kN)')
+    axs[fig_num].set_title('Thrust')
+    axs[fig_num].grid(True)
+    axs[fig_num].legend()
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+
+    # Density
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['rho'], label="Density")
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Density (kg/m^3)')
+    axs[fig_num].set_title('Density')
+    axs[fig_num].grid(True)
+    axs[fig_num].legend()
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+
+    # Gravity
+    fig_num = fig_num + 1
+    axs[fig_num].plot(save_values['t'], save_values['g'], label="Gravity")
+    axs[fig_num].set_xlabel('Time (s)')
+    axs[fig_num].set_ylabel('Gravity (m/s^2)')
+    axs[fig_num].set_title('Gravity')
+    axs[fig_num].grid(True)
+    axs[fig_num].legend()
+    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     plt.tight_layout()
     plt.savefig('data/output/images/combined_plots.png')
