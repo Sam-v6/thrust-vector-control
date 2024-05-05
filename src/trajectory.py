@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 # Local imports
 from controller import Controller
+from util import normalize_radians
 
 
 def determine_density(h):
@@ -40,13 +41,17 @@ def ode_equations(t,y):
     # Determine dt
     util_values['dt'] = t - util_values['prior_t']
 
+    # Normalize theta
+    theta = normalize_radians(theta)
+
     # Ascent: before gravity turn
     if h <= h_turn and t<=tb_ascent:
 
         # Phase
-        util_values["phase"] = "Ascent pre grav turn"
+        util_values["phase"] = 1
 
         # Determine TVC correction
+        util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
         util_values['psi'] = theta
 
         # Thrust and mass
@@ -64,9 +69,10 @@ def ode_equations(t,y):
     elif t <= tb_ascent:
 
         # Phase
-        util_values["phase"] = "Ascent"
+        util_values["phase"] = 2
      
         # Determine TVC correction
+        util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
         util_values['psi'] = theta
 
         # Thrust and mass
@@ -81,12 +87,13 @@ def ode_equations(t,y):
         x_dot = v*np.cos(theta)
 
     # Coast phase
-    elif t > tb_ascent and t < 237:
+    elif t > tb_ascent and util_values["hmax_flag"] == False:
 
         # Phase
-        util_values["phase"] = "Coast"
+        util_values["phase"] = 3
 
         # Determine TVC correction
+        util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
         util_values['psi'] = theta
 
         # Thrust and mass
@@ -100,13 +107,13 @@ def ode_equations(t,y):
         x_dot = v*np.cos(theta)
 
     # Descent burn
-    elif util_values['mp_descent'] > 0 and h < 81e3:
+    elif util_values["hmax_flag"] and util_values['mp_descent'] > 0 and util_values['hmax'] - h >= 10e3:
 
         # Phase
-        util_values["phase"] = "Descent"
+        util_values["phase"] = 4
         
         # Determine TVC correction
-        util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
+        util_values['psi'], util_values['theta_error'] = pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
 
         # Set times
         util_values['descent_t'] = util_values['descent_t'] + util_values['dt']
@@ -126,11 +133,11 @@ def ode_equations(t,y):
     else:
 
         # Phase
-        util_values["phase"] = "Post Descent"
+        util_values["phase"] = 5
 
         # Determine TVC correction
+        util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
         util_values['psi'] = theta
-
 
         # Thrust and mass
         m = m_init - (mdot_ascent * tb_ascent) - (mdot_descent * util_values['descent_t']) - mpl
@@ -141,6 +148,11 @@ def ode_equations(t,y):
         theta_dot = (F*np.sin(util_values['psi']-theta))/(m*v) + (Cl*rho*v*Ap)/(2*m) - (g*np.cos(theta))/v
         h_dot = v*np.sin(theta)
         x_dot = v*np.cos(theta)
+
+    # Determine if we have reached maximum height
+    if (h - util_values['prior_h']) < -10 and util_values["hmax_flag"] == False:
+        util_values['hmax_flag'] = True 
+        util_values['hmax'] = util_values['prior_h']
 
     # Save values
     save_values['t'].append(t)
@@ -156,9 +168,12 @@ def ode_equations(t,y):
     save_values['x'].append(x)
     save_values['rho'].append(rho)
     save_values['g'].append(g)
+    save_values['phase'].append(util_values['phase'])
+
+    # Update prior values
     util_values['prior_t'] = t
     util_values['prior_h'] = h
-
+    
     #print(t, util_values["phase"], theta*180/np.pi,util_values['theta_error']*180/np.pi, util_values['mp_descent'])
 
     # Return
@@ -177,10 +192,10 @@ if __name__ == '__main__':
 
     # Masses
     mprop_ascent = 111130
-    mprop_descent = mprop_ascent/20
     mpl = 32000
     mstruct = 6736
-    m_init = mprop_ascent + mprop_descent + mstruct + mpl
+    mprop_descent = mstruct*2
+    m_init = mprop_ascent + mstruct + mpl + mprop_descent
 
     # Ascent Burn
     tb_ascent = 100
@@ -189,8 +204,9 @@ if __name__ == '__main__':
     h_turn = 1000
 
     # Descent Burn
-    mdot_descent = mdot_ascent/15
-    thrust_descent = thrust_ascent/15
+    descent_ratio = 10
+    mdot_descent = mdot_ascent/descent_ratio
+    thrust_descent = thrust_ascent/descent_ratio
     
     # Initial Conditions
     v_init = 0
@@ -202,23 +218,24 @@ if __name__ == '__main__':
     # Controller
     #------------------------------------------------
     # PID
-    Kp = 0.6
-    Ki = 0.1
-    Kd = 0.2
-    desired_flight_path_angle = 90
+    Kp = 500
+    Ki = 0
+    Kd = 2
+    desired_flight_path_angle = 0
     bounds = 90
     pidController = Controller(Kp, Ki, Kd, desired_flight_path_angle, bounds)
 
     #------------------------------------------------
     # Dict
     #------------------------------------------------
-    # Dicts
     util_values = {
                     'psi': theta_init,
                     'theta_error': 0,
                     'dt': 0,
                     'prior_t': 0,
                     'prior_h': 0,
+                    'hmax_flag': False,
+                    'hmax': 0,
                     'descent_t': 0,
                     'mp_descent': mprop_descent,
                     'mp_ascent': mprop_ascent,
@@ -238,14 +255,15 @@ if __name__ == '__main__':
                     'F': [],
                     'm': [],
                     'mp_descent': [],
-                    'mp_ascent': []
+                    'mp_ascent': [],
+                    'phase': []
                     }
 
     #------------------------------------------------
     # ODE Solving
     #------------------------------------------------
-    # Solve ODEs  (384 original seconds)
-    sol = integrate.solve_ivp(ode_equations, (0,1000), [v_init, theta_init, h_init, x_init], max_step = 0.1)
+    # Solve ODEs
+    sol = integrate.solve_ivp(ode_equations, (0,5000), [v_init, theta_init, h_init, x_init], max_step = 0.1)
 
     # Final values
     v = sol.y[0]                        # m/s
@@ -264,13 +282,13 @@ if __name__ == '__main__':
 
     # Convert to km/s, km, and Metric Tons, and kN
     for i in range(0,len(save_values['t'])):
-        save_values['x'][i] = save_values['x'][i]/1e3   # [km]
-        save_values['h'][i] = save_values['h'][i]/1e3   # [km]
-        save_values['v'][i] = save_values['v'][i]/1e3   # [km/s]
-        save_values['F'][i] = save_values['F'][i]/1e3   # [kN]
-        save_values['m'][i] = save_values['m'][i]/1e3   # [MT]
-        save_values['mp_descent'][i] = save_values['mp_descent'][i]/1e3   # [MT]
-        save_values['mp_ascent'][i] = save_values['mp_ascent'][i]/1e3   # [MT]
+        save_values['x'][i] = save_values['x'][i]/1e3                       # [km]
+        save_values['h'][i] = save_values['h'][i]/1e3                       # [km]
+        save_values['v'][i] = save_values['v'][i]/1e3                       # [km/s]
+        save_values['F'][i] = save_values['F'][i]/1e3                       # [kN]
+        save_values['m'][i] = save_values['m'][i]/1e3                       # [MT]
+        save_values['mp_descent'][i] = save_values['mp_descent'][i]/1e3     # [MT]
+        save_values['mp_ascent'][i] = save_values['mp_ascent'][i]/1e3       # [MT]
 
     # Post processing
     h_array = np.array(save_values['h'])
@@ -281,64 +299,72 @@ if __name__ == '__main__':
     # Plotting
     #------------------------------------------------
     # Create subplots with 4 rows and 1 column
-    fig, axs = plt.subplots(6, 1, figsize=(10, 18))
+    fig, axs = plt.subplots(7, 1, figsize=(10, 24))
 
     # Plot Height
-    axs[0].plot(save_values['t'], save_values['h'])
+    axs[0].plot(save_values['t'], save_values['phase'])
     axs[0].set_xlabel('Time (s)')
-    axs[0].set_ylabel('Height (km)')
-    axs[0].set_title('Height')
+    axs[0].set_ylabel('Phase')
+    axs[0].set_title('Phase')
     axs[0].grid(True)
     axs[0].set_xlim(0, save_values['t'][last_index_positive])
-    axs[0].set_ylim(0, max(save_values['h']))
 
-    # Plot Downrange
-    axs[1].plot(save_values['t'], save_values['x'])
+    # Plot Height
+    axs[1].plot(save_values['t'], save_values['h'])
     axs[1].set_xlabel('Time (s)')
-    axs[1].set_ylabel('Distance (km)')
-    axs[1].set_title('Downrange')
+    axs[1].set_ylabel('Height (km)')
+    axs[1].set_title('Height')
     axs[1].grid(True)
     axs[1].set_xlim(0, save_values['t'][last_index_positive])
+    axs[1].set_ylim(0, max(save_values['h']))
 
-    # Plot Velocity
-    axs[2].plot(save_values['t'], save_values['v'])
+    # Plot Downrange
+    axs[2].plot(save_values['t'], save_values['x'])
     axs[2].set_xlabel('Time (s)')
-    axs[2].set_ylabel('Velocity (km/s)')
-    axs[2].set_title('Velocity')
+    axs[2].set_ylabel('Distance (km)')
+    axs[2].set_title('Downrange')
     axs[2].grid(True)
     axs[2].set_xlim(0, save_values['t'][last_index_positive])
-    axs[2].set_ylim(0, max(save_values['v']))
+
+    # Plot Velocity
+    axs[3].plot(save_values['t'], save_values['v'])
+    axs[3].set_xlabel('Time (s)')
+    axs[3].set_ylabel('Velocity (km/s)')
+    axs[3].set_title('Velocity')
+    axs[3].grid(True)
+    axs[3].set_xlim(0, save_values['t'][last_index_positive])
+    axs[3].set_ylim(0, max(save_values['v']))
 
     # Plot Angles
-    axs[3].plot(save_values['t'], save_values['theta'], label="$\\theta$")
-    axs[3].plot(save_values['t'], save_values['theta_error'], label="$\\theta_e$")
-    axs[3].plot(save_values['t'], save_values['psi'], label="$\\psi$")
-    axs[3].set_xlabel('Time (s)')
-    axs[3].set_ylabel('Angle (deg)')
-    axs[3].set_title('Flight Angles')
-    axs[3].grid(True)
-    axs[3].legend()
-    axs[3].set_xlim(0, save_values['t'][last_index_positive])
-
-    # Mass
-    axs[4].plot(save_values['t'], save_values['m'], label="Total Mass")
-    axs[4].plot(save_values['t'], save_values['mp_descent'], label="Descent Propellant Mass")
-    axs[4].plot(save_values['t'], save_values['mp_ascent'], label="Ascent Propellant Mass")
+    axs[4].plot(save_values['t'], save_values['theta'], label="$\\theta$")
+    axs[4].plot(save_values['t'], save_values['theta_error'], label="$\\theta_e$")
+    axs[4].plot(save_values['t'], save_values['psi'], label="$\\psi$")
     axs[4].set_xlabel('Time (s)')
-    axs[4].set_ylabel('Mass [MT]')
-    axs[4].set_title('Mass')
+    axs[4].set_ylabel('Angle (deg)')
+    axs[4].set_title('Flight Angles')
     axs[4].grid(True)
     axs[4].legend()
     axs[4].set_xlim(0, save_values['t'][last_index_positive])
 
-    # Thrust
-    axs[5].plot(save_values['t'], save_values['F'], label="Thrust")
+    # Mass
+    axs[5].plot(save_values['t'], save_values['m'], label="Total Mass")
+    axs[5].plot(save_values['t'], save_values['mp_descent'], label="Descent Propellant Mass")
+    axs[5].plot(save_values['t'], save_values['mp_ascent'], label="Ascent Propellant Mass")
     axs[5].set_xlabel('Time (s)')
-    axs[5].set_ylabel('Thrust (kN)')
-    axs[5].set_title('Thrust History')
+    axs[5].set_ylabel('Mass [MT]')
+    axs[5].set_title('Mass')
     axs[5].grid(True)
     axs[5].legend()
     axs[5].set_xlim(0, save_values['t'][last_index_positive])
+
+    # Thrust
+    axs[6].plot(save_values['t'], save_values['F'], label="Thrust")
+    axs[6].set_xlabel('Time (s)')
+    axs[6].set_ylabel('Thrust (kN)')
+    axs[6].set_title('Thrust')
+    axs[6].grid(True)
+    axs[6].legend()
+    axs[6].set_xlim(0, save_values['t'][last_index_positive])
 
     plt.tight_layout()
     plt.savefig('data/output/images/combined_plots.png')
@@ -362,3 +388,6 @@ if __name__ == '__main__':
 
     # Save the plot
     plt.savefig('data/output/images/combined_trajectory.png')
+
+    # Useful prints
+    print("Max Height [km]:",util_values['hmax']/1e3)
