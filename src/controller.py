@@ -1,6 +1,9 @@
 # Pkg imports
 import numpy as np
 
+# Local imports
+from util import normalize_radians
+
 class Controller:
     def __init__(self, Kp, Ki, Kd, setpoint, bounds):
         self.Kp = Kp                    # [dimless]
@@ -47,4 +50,4 @@ class Controller:
                 psi_correction = lower_bound
 
         # Return (Swap error and psi_correction back to rads)
-        return np.radians(psi_correction), np.radians(error)
+        return normalize_radians(np.radians(psi_correction)), normalize_radians(np.radians(error))

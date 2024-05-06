@@ -115,7 +115,7 @@ def ode_equations(t,y):
 
         # Phase
         util_values["phase"] = 4
-        Cl = 0.3
+        Cl = 0
         
         # Determine TVC correction
         util_values['psi'], util_values['theta_error'] = pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
@@ -134,17 +134,12 @@ def ode_equations(t,y):
         h_dot = v*np.sin(theta)
         x_dot = v*np.cos(theta)
 
-        # print("First Term:", (F*np.sin(util_values['psi']-theta))/(m*v))
-        # print("Second Term:", (Cl*rho*v*Ap)/(2*m))
-        # print("Third Term:",(g*np.cos(theta))/v)
-        # print("Overall:", theta_dot)
-
     # Post descent
     else:
 
         # Phase
         util_values["phase"] = 5
-        Cl = 0.3
+        Cl = 0
 
         # Determine TVC correction
         util_values['psi'], util_values['theta_error'] =pidController.get_psi_correction(theta, util_values['psi'], util_values['theta_error'], util_values['dt'])
@@ -203,7 +198,7 @@ if __name__ == '__main__':
     # Rocket Defintions
     diam = 3.05
     Ap = np.pi/(4*diam**2)
-    Cd = 0.3
+    Cd = 0.2
     Cl = 0.3
 
     # Masses
@@ -234,11 +229,11 @@ if __name__ == '__main__':
     # Controller
     #------------------------------------------------
     # PID
-    Kp = 8
+    Kp = 1
     Ki = 0
     Kd = 0
-    desired_flight_path_angle = 90
-    bounds = 90
+    desired_flight_path_angle = 0
+    bounds = 30
     pidController = Controller(Kp, Ki, Kd, desired_flight_path_angle, bounds)
 
     #------------------------------------------------
