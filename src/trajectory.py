@@ -320,7 +320,7 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(9, 1, figsize=(10, 32))
     fig_num = -1
 
-    # Plot Height
+    # Plot Phase
     fig_num = fig_num + 1
     axs[fig_num].plot(save_values['t'], save_values['phase'])
     axs[fig_num].set_xlabel('Time (s)')
@@ -357,7 +357,7 @@ if __name__ == '__main__':
     axs[fig_num].set_title('Velocity')
     axs[fig_num].grid(True)
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
-    axs[fig_num].set_ylim(0, max(save_values['v']))
+    axs[fig_num].set_ylim(0, max(save_values['v'][0:last_index_positive]))
 
     # Plot Angles
     fig_num = fig_num + 1
