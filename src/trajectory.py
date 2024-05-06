@@ -11,8 +11,8 @@ from util import normalize_radians
 def determine_density(h):
     # Constants for the standard atmosphere model
     rho0 = 1.225  # Sea level air density in kg/m^3
-    h0 = 0       # Altitude at sea level in meters
-    H = 8500     # Scale height in meters
+    h0 = 0        # Altitude at sea level in meters
+    H = 8500      # Scale height in meters
 
     # Calculate air density using exponential decrease with altitude
     rho = rho0 * np.exp(-(h - h0) / H)
@@ -27,18 +27,18 @@ def ode_equations(t,y):
     h = y[2]
     x = y[3]
 
-    # Determine gravity as a fcn of h
-    Re = 6.3781e6
-    g = 9.81 * (Re/(Re + h))**2
-
-    # Determine density as a fcn of height
-    rho = determine_density(h)
-    print(rho)
-
     # Init
     global util_values
     global save_values
     
+    # Determine density and gravity as a fcn of height
+    if h > 0:
+        rho = determine_density(h)
+        g = 9.81 * (Re/(Re + h))**2
+    else:
+        rho = util_values["prior_rho"]
+        g = util_values["prior_g"]
+
     # Determine dt
     util_values['dt'] = t - util_values['prior_t']
 
@@ -184,6 +184,8 @@ def ode_equations(t,y):
     # Update prior values
     util_values['prior_t'] = t
     util_values['prior_h'] = h
+    util_values['prior_rho'] = rho
+    util_values['prior_g'] = g
     
     #print(t, util_values["phase"], theta*180/np.pi,util_values['theta_error']*180/np.pi, util_values['mp_descent'])
 
@@ -195,6 +197,9 @@ if __name__ == '__main__':
     #------------------------------------------------
     # Inputs
     #------------------------------------------------
+    # Constants
+    Re = 6.3781e6
+
     # Rocket Defintions
     diam = 3.05
     Ap = np.pi/(4*diam**2)
@@ -229,9 +234,9 @@ if __name__ == '__main__':
     # Controller
     #------------------------------------------------
     # PID
-    Kp = 0
-    Ki = 3
-    Kd = 2
+    Kp = 8
+    Ki = 0
+    Kd = 0
     desired_flight_path_angle = 90
     bounds = 90
     pidController = Controller(Kp, Ki, Kd, desired_flight_path_angle, bounds)
@@ -245,6 +250,8 @@ if __name__ == '__main__':
                     'dt': 0,
                     'prior_t': 0,
                     'prior_h': 0,
+                    'prior_rho': 1.225,
+                    'prior_g': 9.81,
                     'hmax_flag': False,
                     'hmax': 0,
                     'descent_t': 0,
@@ -340,6 +347,7 @@ if __name__ == '__main__':
     axs[fig_num].set_title('Downrange')
     axs[fig_num].grid(True)
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    axs[fig_num].set_ylim(0, max(save_values['x'][0:last_index_positive]))
 
     # Plot Velocity
     fig_num = fig_num + 1    
@@ -389,7 +397,7 @@ if __name__ == '__main__':
     fig_num = fig_num + 1
     axs[fig_num].plot(save_values['t'], save_values['rho'], label="Density")
     axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Density (kg/m^3)')
+    axs[fig_num].set_ylabel('Density (kg/m$^3$)')
     axs[fig_num].set_title('Density')
     axs[fig_num].grid(True)
     axs[fig_num].legend()
@@ -399,7 +407,7 @@ if __name__ == '__main__':
     fig_num = fig_num + 1
     axs[fig_num].plot(save_values['t'], save_values['g'], label="Gravity")
     axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Gravity (m/s^2)')
+    axs[fig_num].set_ylabel('Gravity (m/s$^2$)')
     axs[fig_num].set_title('Gravity')
     axs[fig_num].grid(True)
     axs[fig_num].legend()
@@ -422,7 +430,7 @@ if __name__ == '__main__':
     ax.set_ylabel('Height (km)')
     ax.set_title('2D Position')
     ax.grid(True)
-    #ax.set_xlim(0, save_values['x'][last_index_positive])
+    ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
     ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])])
 
     # Save the plot
