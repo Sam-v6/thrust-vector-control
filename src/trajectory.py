@@ -436,27 +436,39 @@ if __name__ == '__main__':
     #------------------------------------------------
     # Trajectory Animation
     #------------------------------------------------
+    # Create a figure and axes
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # Create quiver plots outside the loop
+    flight_arrow = ax.quiver([], [], [], [], scale=25, color='r', label='Body Vector')
+    thrust_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Thrust Vector')
+
     # Function to update the plot for each frame of animation
     def update(frame):
-        ax.clear()
         i = frame * 500
+        x_pos = save_values['x'][i]
+        y_pos = save_values['h'][i]
         flight_angle_vector_x = np.cos(save_values['theta'][i] * np.pi / 180)
         flight_angle_vector_y = np.sin(save_values['theta'][i] * np.pi / 180)
         thrust_angle_vector_x = np.cos(save_values['psi'][i] * np.pi / 180)
         thrust_angle_vector_y = np.sin(save_values['psi'][i] * np.pi / 180)
-        ax.quiver(save_values['x'][i], save_values['h'][i], flight_angle_vector_x, flight_angle_vector_y, scale=25, color='r', label='Body Vector')
-        ax.quiver(save_values['x'][i], save_values['h'][i], -thrust_angle_vector_x, -thrust_angle_vector_y, scale=35, color='b', label='Thrust Vector')
-        ax.set_xlabel('Downrange Position (km)')
-        ax.set_ylabel('Height (km)')
-        ax.set_title('2D Position')
-        ax.grid(True)
-        ax.legend()
-        ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
-        ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
+        flight_arrow.set_offsets((x_pos, y_pos))
+        flight_arrow.set_UVC(flight_angle_vector_x, flight_angle_vector_y)
+        thrust_arrow.set_offsets((x_pos, y_pos))
+        thrust_arrow.set_UVC(-thrust_angle_vector_x, -thrust_angle_vector_y)
+        return flight_arrow, thrust_arrow
 
-    # Create a figure
-    fig, ax = plt.subplots(figsize=(10,8))
-    ani = FuncAnimation(fig, update, frames=len(save_values['t']) // 500, repeat=True)
+    # Call update_quiver function inside the loop
+    ani = FuncAnimation(fig, update, frames=len(save_values['t']) // 500, repeat=True) # interval?
+    
+    # Set axes labels and title
+    ax.set_xlabel('Downrange Position (km)')
+    ax.set_ylabel('Height (km)')
+    ax.set_title('2D Position')
+    ax.grid(True)
+    ax.legend()
+    ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
+    ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
     ani.save('data/output/images/combined_trajectory.gif', writer='pillow')
 
     #------------------------------------------------
