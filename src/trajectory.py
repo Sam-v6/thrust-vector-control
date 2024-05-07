@@ -467,10 +467,11 @@ def generate_trajectory(pidController):
     # ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
     # ani.save('data/output/images/combined_trajectory.gif', writer='pillow')
 
-    # #------------------------------------------------
-    # # Printing
-    # #------------------------------------------------
-    # print("Max Height [km]:",util_values['hmax']/1e3)
+    #------------------------------------------------
+    # Printing
+    #------------------------------------------------
+    #print("Max Height [km]:",util_values['hmax']/1e3)
+    print(f"Run Complete for: Kp={pidController.Kp}, Ki={pidController.Ki}, Kd={pidController.Kd}")
 
     # Return
     return save_values, last_index_positive
@@ -526,7 +527,7 @@ if __name__ == '__main__':
     ax.legend()
     ax.set_xlim(0, max(max_down_range_list))
     ax.set_ylim(0, max(max_height_list)*1.1)
-    plt.show()
+    plt.savefig('data/output/images/dispersed_trajectories.png')
 
 
 
