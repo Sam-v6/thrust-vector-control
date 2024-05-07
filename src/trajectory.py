@@ -8,6 +8,83 @@ from matplotlib.animation import FuncAnimation
 from controller import Controller
 from util import normalize_radians
 
+#------------------------------------------------
+# Inputs
+#------------------------------------------------
+# Constants
+Re = 6.3781e6
+
+# Rocket Defintions
+diam = 3.05
+Ap = np.pi/(4*diam**2)
+Cd = 0.2
+Cl = 0.3
+
+# Masses
+mprop_ascent = 111130
+mpl = 32000
+mstruct = 6736
+mprop_descent = mstruct*2
+m_init = mprop_ascent + mstruct + mpl + mprop_descent
+
+# Ascent Burn
+tb_ascent = 100
+mdot_ascent = mprop_ascent/tb_ascent
+thrust_ascent = 19e5
+h_turn = 1000
+
+# Descent Burn
+descent_ratio = 5
+mdot_descent = mdot_ascent/descent_ratio
+thrust_descent = thrust_ascent/descent_ratio
+
+# Initial Conditions
+v_init = 0
+theta_init = np.radians(88)
+h_init = 0
+x_init = 0
+
+#------------------------------------------------
+# Controller
+#------------------------------------------------
+desired_flight_path_angle = 0
+bounds = 60
+
+#------------------------------------------------
+# Dict
+#------------------------------------------------
+util_values = {
+                'psi': theta_init,
+                'theta_error': 0,
+                'dt': 0,
+                'prior_t': 0,
+                'prior_h': 0,
+                'prior_rho': 1.225,
+                'prior_g': 9.81,
+                'hmax_flag': False,
+                'hmax': 0,
+                'descent_t': 0,
+                'mp_descent': mprop_descent,
+                'mp_ascent': mprop_ascent,
+                'phase': "None"
+                }
+
+save_values =  { 
+                't': [],
+                'psi': [],
+                'theta_error': [],
+                'theta': [],
+                'v': [],
+                'h': [],
+                'x': [],
+                'rho': [],
+                'g': [],
+                'F': [],
+                'm': [],
+                'mp_descent': [],
+                'mp_ascent': [],
+                'phase': []
+                }
 
 def determine_density(h):
     # Constants for the standard atmosphere model
@@ -190,90 +267,7 @@ def ode_equations(t,y):
     # Return
     return [v_dot, theta_dot, h_dot, x_dot]
 
-if __name__ == '__main__':
-
-    #------------------------------------------------
-    # Inputs
-    #------------------------------------------------
-    # Constants
-    Re = 6.3781e6
-
-    # Rocket Defintions
-    diam = 3.05
-    Ap = np.pi/(4*diam**2)
-    Cd = 0.2
-    Cl = 0.3
-
-    # Masses
-    mprop_ascent = 111130
-    mpl = 32000
-    mstruct = 6736
-    mprop_descent = mstruct*2
-    m_init = mprop_ascent + mstruct + mpl + mprop_descent
-
-    # Ascent Burn
-    tb_ascent = 100
-    mdot_ascent = mprop_ascent/tb_ascent
-    thrust_ascent = 19e5
-    h_turn = 1000
-
-    # Descent Burn
-    descent_ratio = 5
-    mdot_descent = mdot_ascent/descent_ratio
-    thrust_descent = thrust_ascent/descent_ratio
-    
-    # Initial Conditions
-    v_init = 0
-    theta_init = np.radians(88)
-    h_init = 0
-    x_init = 0
-
-    #------------------------------------------------
-    # Controller
-    #------------------------------------------------
-    # PID
-    Kp = 10
-    Ki = 0
-    Kd = 0
-    desired_flight_path_angle = 0
-    bounds = 60
-    pidController = Controller(Kp, Ki, Kd, desired_flight_path_angle, bounds)
-
-    #------------------------------------------------
-    # Dict
-    #------------------------------------------------
-    util_values = {
-                    'psi': theta_init,
-                    'theta_error': 0,
-                    'dt': 0,
-                    'prior_t': 0,
-                    'prior_h': 0,
-                    'prior_rho': 1.225,
-                    'prior_g': 9.81,
-                    'hmax_flag': False,
-                    'hmax': 0,
-                    'descent_t': 0,
-                    'mp_descent': mprop_descent,
-                    'mp_ascent': mprop_ascent,
-                    'phase': "None"
-                    }
-
-    save_values =  { 
-                    't': [],
-                    'psi': [],
-                    'theta_error': [],
-                    'theta': [],
-                    'v': [],
-                    'h': [],
-                    'x': [],
-                    'rho': [],
-                    'g': [],
-                    'F': [],
-                    'm': [],
-                    'mp_descent': [],
-                    'mp_ascent': [],
-                    'phase': []
-                    }
+def generate_trajectory(pidController):
 
     #------------------------------------------------
     # ODE Solving
@@ -314,166 +308,227 @@ if __name__ == '__main__':
     #------------------------------------------------
     # Subplot
     #------------------------------------------------
-    # Create subplots with 4 rows and 1 column
-    fig, axs = plt.subplots(9, 1, figsize=(10, 32))
-    fig_num = -1
+    # # Create subplots with 4 rows and 1 column
+    # fig, axs = plt.subplots(9, 1, figsize=(10, 32))
+    # fig_num = -1
 
-    # Plot Phase
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['phase'])
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Phase')
-    axs[fig_num].set_title('Phase')
-    axs[fig_num].grid(True)
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # # Plot Phase
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['phase'])
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Phase')
+    # axs[fig_num].set_title('Phase')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
-    # Plot Height
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['h'])
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Height (km)')
-    axs[fig_num].set_title('Height')
-    axs[fig_num].grid(True)
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
-    axs[fig_num].set_ylim(0, max(save_values['h'])*1.1)
+    # # Plot Height
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['h'])
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Height (km)')
+    # axs[fig_num].set_title('Height')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # axs[fig_num].set_ylim(0, max(save_values['h'])*1.1)
 
-    # Plot Downrange
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['x'])
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Distance (km)')
-    axs[fig_num].set_title('Downrange')
-    axs[fig_num].grid(True)
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
-    axs[fig_num].set_ylim(0, max(save_values['x'][0:last_index_positive])*1.1)
+    # # Plot Downrange
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['x'])
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Distance (km)')
+    # axs[fig_num].set_title('Downrange')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # axs[fig_num].set_ylim(0, max(save_values['x'][0:last_index_positive])*1.1)
 
-    # Plot Velocity
-    fig_num = fig_num + 1    
-    axs[fig_num].plot(save_values['t'], save_values['v'])
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Velocity (km/s)')
-    axs[fig_num].set_title('Velocity')
-    axs[fig_num].grid(True)
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
-    axs[fig_num].set_ylim(0, max(save_values['v'][0:last_index_positive])*1.1)
+    # # Plot Velocity
+    # fig_num = fig_num + 1    
+    # axs[fig_num].plot(save_values['t'], save_values['v'])
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Velocity (km/s)')
+    # axs[fig_num].set_title('Velocity')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # axs[fig_num].set_ylim(0, max(save_values['v'][0:last_index_positive])*1.1)
 
-    # Plot Angles
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['theta'], label="$\\theta$")
-    axs[fig_num].plot(save_values['t'], save_values['theta_error'], label="$\\theta_e$")
-    axs[fig_num].plot(save_values['t'], save_values['psi'], label="$\\psi$")
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Angle (deg)')
-    axs[fig_num].set_title('Flight Angles')
-    axs[fig_num].grid(True)
-    axs[fig_num].legend()
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # # Plot Angles
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['theta'], label="$\\theta$")
+    # axs[fig_num].plot(save_values['t'], save_values['theta_error'], label="$\\theta_e$")
+    # axs[fig_num].plot(save_values['t'], save_values['psi'], label="$\\psi$")
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Angle (deg)')
+    # axs[fig_num].set_title('Flight Angles')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].legend()
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
-    # Mass
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['m'], label="Total Mass")
-    axs[fig_num].plot(save_values['t'], save_values['mp_descent'], label="Descent Propellant Mass")
-    axs[fig_num].plot(save_values['t'], save_values['mp_ascent'], label="Ascent Propellant Mass")
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Mass [MT]')
-    axs[fig_num].set_title('Mass')
-    axs[fig_num].grid(True)
-    axs[fig_num].legend()
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # # Mass
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['m'], label="Total Mass")
+    # axs[fig_num].plot(save_values['t'], save_values['mp_descent'], label="Descent Propellant Mass")
+    # axs[fig_num].plot(save_values['t'], save_values['mp_ascent'], label="Ascent Propellant Mass")
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Mass [MT]')
+    # axs[fig_num].set_title('Mass')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].legend()
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
-    # Thrust
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['F'], label="Thrust")
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Thrust (kN)')
-    axs[fig_num].set_title('Thrust')
-    axs[fig_num].grid(True)
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # # Thrust
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['F'], label="Thrust")
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Thrust (kN)')
+    # axs[fig_num].set_title('Thrust')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
-    # Density
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['rho'], label="Density")
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Density (kg/m$^3$)')
-    axs[fig_num].set_title('Density')
-    axs[fig_num].grid(True)
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # # Density
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['rho'], label="Density")
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Density (kg/m$^3$)')
+    # axs[fig_num].set_title('Density')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
-    # Gravity
-    fig_num = fig_num + 1
-    axs[fig_num].plot(save_values['t'], save_values['g'], label="Gravity")
-    axs[fig_num].set_xlabel('Time (s)')
-    axs[fig_num].set_ylabel('Gravity (m/s$^2$)')
-    axs[fig_num].set_title('Gravity')
-    axs[fig_num].grid(True)
-    axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
+    # # Gravity
+    # fig_num = fig_num + 1
+    # axs[fig_num].plot(save_values['t'], save_values['g'], label="Gravity")
+    # axs[fig_num].set_xlabel('Time (s)')
+    # axs[fig_num].set_ylabel('Gravity (m/s$^2$)')
+    # axs[fig_num].set_title('Gravity')
+    # axs[fig_num].grid(True)
+    # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
-    plt.tight_layout()
-    plt.savefig('data/output/images/combined_plots.png')
+    # plt.tight_layout()
+    # plt.savefig('data/output/images/combined_plots.png')
 
-    #------------------------------------------------
-    # Trajectory Plot
-    #------------------------------------------------
-    # Create a figure and axes
-    fig, ax = plt.subplots(figsize=(10,8))
-    ax.plot(save_values['x'], save_values['h'], color='gray', linestyle="--")
-    for i in range(0, len(save_values['t']), 500):
-        flight_angle_vector_x = np.cos(save_values['theta'][i] * np.pi / 180)
-        flight_angle_vector_y = np.sin(save_values['theta'][i] * np.pi / 180)
-        thrust_angle_vector_x = np.cos(save_values['psi'][i] * np.pi / 180)
-        thrust_angle_vector_y = np.sin(save_values['psi'][i] * np.pi / 180)
-        ax.quiver(save_values['x'][i], save_values['h'][i], flight_angle_vector_x, flight_angle_vector_y, scale=25, color='r', label='Body Vector')
-        ax.quiver(save_values['x'][i], save_values['h'][i], -thrust_angle_vector_x, -thrust_angle_vector_y, scale=35, color='b', label='Thrust Vector')
-    ax.set_xlabel('Downrange Position (km)')
-    ax.set_ylabel('Height (km)')
-    ax.set_title('2D Position')
-    ax.grid(True)
-    ax.legend(handles=ax.get_legend_handles_labels()[0][:2], labels=ax.get_legend_handles_labels()[1][:2])          # This takes only the first two entries of the legend because it repeats
-    ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
-    ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
+    # #------------------------------------------------
+    # # Trajectory Plot
+    # #------------------------------------------------
+    # # Create a figure and axes
+    # fig, ax = plt.subplots(figsize=(10,8))
+    # ax.plot(save_values['x'], save_values['h'], color='gray', linestyle="--")
+    # for i in range(0, len(save_values['t']), 500):
+    #     flight_angle_vector_x = np.cos(save_values['theta'][i] * np.pi / 180)
+    #     flight_angle_vector_y = np.sin(save_values['theta'][i] * np.pi / 180)
+    #     thrust_angle_vector_x = np.cos(save_values['psi'][i] * np.pi / 180)
+    #     thrust_angle_vector_y = np.sin(save_values['psi'][i] * np.pi / 180)
+    #     ax.quiver(save_values['x'][i], save_values['h'][i], flight_angle_vector_x, flight_angle_vector_y, scale=25, color='r', label='Body Vector')
+    #     ax.quiver(save_values['x'][i], save_values['h'][i], -thrust_angle_vector_x, -thrust_angle_vector_y, scale=35, color='b', label='Thrust Vector')
+    # ax.set_xlabel('Downrange Position (km)')
+    # ax.set_ylabel('Height (km)')
+    # ax.set_title('2D Position')
+    # ax.grid(True)
+    # ax.legend(handles=ax.get_legend_handles_labels()[0][:2], labels=ax.get_legend_handles_labels()[1][:2])          # This takes only the first two entries of the legend because it repeats
+    # ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
+    # ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
 
-    # Save the plot
-    plt.savefig('data/output/images/combined_trajectory.png')
+    # # Save the plot
+    # plt.savefig('data/output/images/combined_trajectory.png')
 
-    #------------------------------------------------
-    # Trajectory Animation
-    #------------------------------------------------
-    # Create a figure and axes
-    fig, ax = plt.subplots(figsize=(10, 8))
+    # #------------------------------------------------
+    # # Trajectory Animation
+    # #------------------------------------------------
+    # # Create a figure and axes
+    # fig, ax = plt.subplots(figsize=(10, 8))
 
-    # Create quiver plots outside the loop
-    flight_arrow = ax.quiver([], [], [], [], scale=25, color='r', label='Body Vector')
-    thrust_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Thrust Vector')
+    # # Create quiver plots outside the loop
+    # flight_arrow = ax.quiver([], [], [], [], scale=25, color='r', label='Body Vector')
+    # thrust_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Thrust Vector')
 
-    # Function to update the plot for each frame of animation
-    def update(frame):
-        i = frame * 500
-        x_pos = save_values['x'][i]
-        y_pos = save_values['h'][i]
-        flight_angle_vector_x = np.cos(save_values['theta'][i] * np.pi / 180)
-        flight_angle_vector_y = np.sin(save_values['theta'][i] * np.pi / 180)
-        thrust_angle_vector_x = np.cos(save_values['psi'][i] * np.pi / 180)
-        thrust_angle_vector_y = np.sin(save_values['psi'][i] * np.pi / 180)
-        flight_arrow.set_offsets((x_pos, y_pos))
-        flight_arrow.set_UVC(flight_angle_vector_x, flight_angle_vector_y)
-        thrust_arrow.set_offsets((x_pos, y_pos))
-        thrust_arrow.set_UVC(-thrust_angle_vector_x, -thrust_angle_vector_y)
-        return flight_arrow, thrust_arrow
+    # # Function to update the plot for each frame of animation
+    # def update(frame):
+    #     i = frame * 500
+    #     x_pos = save_values['x'][i]
+    #     y_pos = save_values['h'][i]
+    #     flight_angle_vector_x = np.cos(save_values['theta'][i] * np.pi / 180)
+    #     flight_angle_vector_y = np.sin(save_values['theta'][i] * np.pi / 180)
+    #     thrust_angle_vector_x = np.cos(save_values['psi'][i] * np.pi / 180)
+    #     thrust_angle_vector_y = np.sin(save_values['psi'][i] * np.pi / 180)
+    #     flight_arrow.set_offsets((x_pos, y_pos))
+    #     flight_arrow.set_UVC(flight_angle_vector_x, flight_angle_vector_y)
+    #     thrust_arrow.set_offsets((x_pos, y_pos))
+    #     thrust_arrow.set_UVC(-thrust_angle_vector_x, -thrust_angle_vector_y)
+    #     return flight_arrow, thrust_arrow
 
-    # Call update_quiver function inside the loop
-    ani = FuncAnimation(fig, update, frames=len(save_values['t']) // 500, repeat=True) # interval?
+    # # Call update_quiver function inside the loop
+    # ani = FuncAnimation(fig, update, frames=len(save_values['t']) // 500, repeat=True) # interval?
     
-    # Set axes labels and title
-    ax.set_xlabel('Downrange Position (km)')
+    # # Set axes labels and title
+    # ax.set_xlabel('Downrange Position (km)')
+    # ax.set_ylabel('Height (km)')
+    # ax.set_title('2D Position')
+    # ax.grid(True)
+    # ax.legend()
+    # ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
+    # ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
+    # ani.save('data/output/images/combined_trajectory.gif', writer='pillow')
+
+    # #------------------------------------------------
+    # # Printing
+    # #------------------------------------------------
+    # print("Max Height [km]:",util_values['hmax']/1e3)
+
+    # Return
+    return save_values, last_index_positive
+
+if __name__ == '__main__':
+
+    # Init
+    values_list = []
+    max_down_range_list = []
+    max_height_list = []
+
+    # PID
+    gain_list = [[100, 1, 1], [10, 0, 0], [15, 1, 6], [4, 1, 36], [150, 0, 6], [0, 0, 6], [150, 100, 60]]
+    for gains in gain_list:
+
+        pidController = Controller(gains[0], gains[1], gains[2], desired_flight_path_angle, bounds)
+
+        # Call trajs
+        values, last_index_positive = generate_trajectory(pidController)
+        values_list.append(values.copy())
+        max_down_range_list.append(values['x'][last_index_positive])
+        max_height_list.append(max(values['h'][0:last_index_positive]))
+
+        # Clear values
+        for key in save_values:
+            save_values[key] = []
+
+        # Reinit
+        util_values = {
+                'psi': theta_init,
+                'theta_error': 0,
+                'dt': 0,
+                'prior_t': 0,
+                'prior_h': 0,
+                'prior_rho': 1.225,
+                'prior_g': 9.81,
+                'hmax_flag': False,
+                'hmax': 0,
+                'descent_t': 0,
+                'mp_descent': mprop_descent,
+                'mp_ascent': mprop_ascent,
+                'phase': "None"
+                }
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(10, 8))
+    for values, gains in zip(values_list, gain_list):
+        ax.plot(values['x'], values['h'], label=f"K$_p$={gains[0]}, K$_i$={gains[1]}, K$_d$={gains[2]}")
+    ax.set_xlabel('Downrage (km)')
     ax.set_ylabel('Height (km)')
     ax.set_title('2D Position')
     ax.grid(True)
     ax.legend()
-    ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
-    ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
-    ani.save('data/output/images/combined_trajectory.gif', writer='pillow')
+    ax.set_xlim(0, max(max_down_range_list))
+    ax.set_ylim(0, max(max_height_list)*1.1)
+    plt.show()
 
-    #------------------------------------------------
-    # Printing
-    #------------------------------------------------
-    print("Max Height [km]:",util_values['hmax']/1e3)
+
+
+
+        
