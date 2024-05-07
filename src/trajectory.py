@@ -2,6 +2,7 @@
 import numpy as np
 from scipy import integrate
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 # Local imports
 from controller import Controller
@@ -232,8 +233,8 @@ if __name__ == '__main__':
     Kp = 1
     Ki = 0
     Kd = 0
-    desired_flight_path_angle = 0
-    bounds = 30
+    desired_flight_path_angle = 90
+    bounds = 60
     pidController = Controller(Kp, Ki, Kd, desired_flight_path_angle, bounds)
 
     #------------------------------------------------
@@ -309,7 +310,7 @@ if __name__ == '__main__':
     last_index_positive = len(h_array) - np.argmax(reversed_h_array > 0) - 1
 
     #------------------------------------------------
-    # Plotting
+    # Subplot
     #------------------------------------------------
     # Create subplots with 4 rows and 1 column
     fig, axs = plt.subplots(9, 1, figsize=(10, 32))
@@ -332,7 +333,7 @@ if __name__ == '__main__':
     axs[fig_num].set_title('Height')
     axs[fig_num].grid(True)
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
-    axs[fig_num].set_ylim(0, max(save_values['h']))
+    axs[fig_num].set_ylim(0, max(save_values['h'])*1.1)
 
     # Plot Downrange
     fig_num = fig_num + 1
@@ -342,7 +343,7 @@ if __name__ == '__main__':
     axs[fig_num].set_title('Downrange')
     axs[fig_num].grid(True)
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
-    axs[fig_num].set_ylim(0, max(save_values['x'][0:last_index_positive]))
+    axs[fig_num].set_ylim(0, max(save_values['x'][0:last_index_positive])*1.1)
 
     # Plot Velocity
     fig_num = fig_num + 1    
@@ -352,7 +353,7 @@ if __name__ == '__main__':
     axs[fig_num].set_title('Velocity')
     axs[fig_num].grid(True)
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
-    axs[fig_num].set_ylim(0, max(save_values['v'][0:last_index_positive]))
+    axs[fig_num].set_ylim(0, max(save_values['v'][0:last_index_positive])*1.1)
 
     # Plot Angles
     fig_num = fig_num + 1
@@ -385,7 +386,6 @@ if __name__ == '__main__':
     axs[fig_num].set_ylabel('Thrust (kN)')
     axs[fig_num].set_title('Thrust')
     axs[fig_num].grid(True)
-    axs[fig_num].legend()
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     # Density
@@ -395,7 +395,6 @@ if __name__ == '__main__':
     axs[fig_num].set_ylabel('Density (kg/m$^3$)')
     axs[fig_num].set_title('Density')
     axs[fig_num].grid(True)
-    axs[fig_num].legend()
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     # Gravity
@@ -405,15 +404,17 @@ if __name__ == '__main__':
     axs[fig_num].set_ylabel('Gravity (m/s$^2$)')
     axs[fig_num].set_title('Gravity')
     axs[fig_num].grid(True)
-    axs[fig_num].legend()
     axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     plt.tight_layout()
     plt.savefig('data/output/images/combined_plots.png')
 
+    #------------------------------------------------
+    # Trajectory Plot
+    #------------------------------------------------
     # Create a figure and axes
-    fig, ax = plt.subplots()
-    ax.plot(save_values['x'], save_values['h'], color='black')
+    fig, ax = plt.subplots(figsize=(10,8))
+    ax.plot(save_values['x'], save_values['h'], color='gray', linestyle="--")
     for i in range(0, len(save_values['t']), 500):
         flight_angle_vector_x = np.cos(save_values['theta'][i] * np.pi / 180)
         flight_angle_vector_y = np.sin(save_values['theta'][i] * np.pi / 180)
@@ -425,11 +426,40 @@ if __name__ == '__main__':
     ax.set_ylabel('Height (km)')
     ax.set_title('2D Position')
     ax.grid(True)
+    ax.legend(handles=ax.get_legend_handles_labels()[0][:2], labels=ax.get_legend_handles_labels()[1][:2])          # This takes only the first two entries of the legend because it repeats
     ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
-    ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])])
+    ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
 
     # Save the plot
     plt.savefig('data/output/images/combined_trajectory.png')
 
-    # Useful prints
+    #------------------------------------------------
+    # Trajectory Animation
+    #------------------------------------------------
+    # Function to update the plot for each frame of animation
+    def update(frame):
+        ax.clear()
+        i = frame * 500
+        flight_angle_vector_x = np.cos(save_values['theta'][i] * np.pi / 180)
+        flight_angle_vector_y = np.sin(save_values['theta'][i] * np.pi / 180)
+        thrust_angle_vector_x = np.cos(save_values['psi'][i] * np.pi / 180)
+        thrust_angle_vector_y = np.sin(save_values['psi'][i] * np.pi / 180)
+        ax.quiver(save_values['x'][i], save_values['h'][i], flight_angle_vector_x, flight_angle_vector_y, scale=25, color='r', label='Body Vector')
+        ax.quiver(save_values['x'][i], save_values['h'][i], -thrust_angle_vector_x, -thrust_angle_vector_y, scale=35, color='b', label='Thrust Vector')
+        ax.set_xlabel('Downrange Position (km)')
+        ax.set_ylabel('Height (km)')
+        ax.set_title('2D Position')
+        ax.grid(True)
+        ax.legend()
+        ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
+        ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
+
+    # Create a figure
+    fig, ax = plt.subplots(figsize=(10,8))
+    ani = FuncAnimation(fig, update, frames=len(save_values['t']) // 500, repeat=True)
+    ani.save('data/output/images/combined_trajectory.gif', writer='pillow')
+
+    #------------------------------------------------
+    # Printing
+    #------------------------------------------------
     print("Max Height [km]:",util_values['hmax']/1e3)
