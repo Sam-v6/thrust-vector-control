@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import array
 import random
+import copy
 from deap import algorithms
 from deap import base
 from deap import creator
@@ -114,7 +115,7 @@ def ode_equations(t,y):
     # Init
     global util_values
     global save_values
-    
+
     # Determine density and gravity as a fcn of height
     if h > 0:
         rho = determine_density(h)
@@ -482,10 +483,20 @@ def generate_trajectory(pidController):
     # Return
     return save_values, last_index_positive
 
-def evalOneMax(individual):
+def biased_attr_kp():
+    return random.randint(0, 100) 
 
-        # Status print
-        #print(f"Starting run for: Kp={individual[0]}, Ki={individual[1]}, Kd={individual[2]}")
+def biased_attr_ki():
+    # Randomly choose whether Ki should be 0 or non-zero
+    if random.random() < 0.3:
+        return 0
+    else:
+        return random.randint(1, 100)  # Non-zero value within bounds
+
+def biased_attr_kd():
+    return random.randint(0, 100)  
+
+def evalOneMax(individual):
 
         # Create controller
         global pidController
@@ -493,7 +504,7 @@ def evalOneMax(individual):
 
         # Call trajs
         values, last_index_positive = generate_trajectory(pidController)
-        new_values = values.copy()
+        new_values = copy.deepcopy(values)
         # values_list.append(values.copy())
         # max_down_range_list.append(values['x'][last_index_positive])
         # max_height_list.append(max(values['h'][0:last_index_positive]))
@@ -503,6 +514,7 @@ def evalOneMax(individual):
             save_values[key] = []
 
         # Reinit
+        global util_values
         util_values = {
                 'psi': theta_init,
                 'theta_error': 0,
@@ -520,7 +532,7 @@ def evalOneMax(individual):
                 }
 
         # Return
-        return round(new_values['x'][last_index_positive]),      # must return as a tuple
+        return new_values['x'][last_index_positive],      # must return as a tuple
 
 #--------------------------------------------------
 # GA Setup
@@ -532,9 +544,12 @@ creator.create("Individual", array.array, typecode='b', fitness=creator.FitnessM
 # Toolboxes
 toolbox = base.Toolbox()
 # Attribute generator
-toolbox.register("attr_bool", random.randint, 0, 100) # Bounds of the gains
+toolbox.register("attr_kp", biased_attr_kp)
+toolbox.register("attr_ki", biased_attr_ki)
+toolbox.register("attr_kd", biased_attr_kd)
+
 # Structure initializers
-toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, 3)  # 3 PID Gains (Kp, Ki, Kd)
+toolbox.register("individual", tools.initCycle, creator.Individual,(toolbox.attr_kp, toolbox.attr_ki, toolbox.attr_kd), n=1)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 # Set up options
@@ -558,12 +573,12 @@ def main():
     stats.register("std", np.std)
     stats.register("min", np.min)
     stats.register("max", np.max)
-    #stats.register("fitness", lambda pop: [ind for ind in pop])
-    #stats.register("genes", lambda genes: [ind for ind in pop])
+    stats.register("fitness", lambda pop: [ind for ind in pop])
+    stats.register("genes", lambda genes: [ind for ind in pop])
     
     # Calling the algo
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=20,      # Generations
-                                   stats=stats, halloffame=hof, verbose=True)
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=10,      # Generations
+                                   stats=stats, halloffame=hof, verbose=False)
 
     # Print the best one
     best_ind = tools.selBest(pop, 1)[0]
@@ -575,6 +590,11 @@ def main():
 if __name__ == '__main__':
 
     pop, log, hof = main()
+    
+    for generation in range(0,len(log)):
+        print("Generation: ", generation+1)
+        for individual in range(0,len(log[generation]["genes"])):
+            print("Individual:", individual+1, "Fitness:", log[generation]["fitness"][individual][0], "Values:", log[generation]["genes"][individual][0],log[generation]["genes"][individual][1],log[generation]["genes"][individual][2])
 
     # # Init
     # values_list = []
