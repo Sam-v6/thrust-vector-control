@@ -48,7 +48,7 @@ def main():
     random.seed(64)
 
     # Starting population size
-    pop = toolbox.population(n=30)
+    pop = toolbox.population(n=5)       # Starting population size
 
     # Setting algo and stats
     hof = tools.HallOfFame(1)
