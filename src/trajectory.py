@@ -127,11 +127,13 @@ def ode_equations(t,y):
         # Thrust and mass
         util_values['mp_descent'] = util_values['mp_descent'] - (mdot_descent *  util_values['dt'])
         m = m_init - (mdot_ascent * tb_ascent) - (mdot_descent * util_values['descent_t']) - mpl
-        F = thrust_descent
+        F_v = 0
+        F_theta = thrust_descent
+        F = F_theta
 
         # EOMS
-        v_dot = (F*np.cos(util_values['psi']-theta))/m - (Cd*rho*v**2*Ap)/(2*m) - g*np.sin(theta)
-        theta_dot = ((F*np.sin(util_values['psi']-theta))/(m*v) + (Cl*rho*v*Ap)/(2*m) - (g*np.cos(theta))/v)
+        v_dot = (F_v*np.cos(util_values['psi']-theta))/m - (Cd*rho*v**2*Ap)/(2*m) - g*np.sin(theta)
+        theta_dot = ((F_theta*np.sin(util_values['psi']-theta))/(m*v) + (Cl*rho*v*Ap)/(2*m) - (g*np.cos(theta))/v)
         h_dot = v*np.sin(theta)
         x_dot = v*np.cos(theta)
 
@@ -216,7 +218,7 @@ if __name__ == '__main__':
     h_turn = 1000
 
     # Descent Burn
-    descent_ratio = 10
+    descent_ratio = 5
     mdot_descent = mdot_ascent/descent_ratio
     thrust_descent = thrust_ascent/descent_ratio
     
@@ -230,10 +232,10 @@ if __name__ == '__main__':
     # Controller
     #------------------------------------------------
     # PID
-    Kp = 1
+    Kp = 10
     Ki = 0
     Kd = 0
-    desired_flight_path_angle = 90
+    desired_flight_path_angle = 0
     bounds = 60
     pidController = Controller(Kp, Ki, Kd, desired_flight_path_angle, bounds)
 
