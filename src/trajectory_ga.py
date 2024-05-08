@@ -567,7 +567,7 @@ def main():
     random.seed(64)
 
     # Starting population size
-    pop = toolbox.population(n=10)                                           # Initial pop size
+    pop = toolbox.population(n=10)                                                  # Initial pop size
 
     # Setting algo and stats
     hof = tools.HallOfFame(1)
@@ -580,7 +580,7 @@ def main():
     stats.register("genes", lambda genes: [ind for ind in pop])
     
     # Calling the algo
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=5,      # Generations
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.6, ngen=5,       # Generations
                                    stats=stats, halloffame=hof, verbose=True)
 
     # Print the best one
@@ -594,28 +594,11 @@ if __name__ == '__main__':
 
     pop, log, hof = main()
     
-    # for generation in range(0,len(log)):
-    #     print("Generation: ", generation+1)
-    #     for individual in range(0,len(log[generation]["genes"])):
-    #         print("Individual:", individual+1, "Fitness:", log[generation]["fitness"][individual][0], "Values:", log[generation]["genes"][individual][0],log[generation]["genes"][individual][1],log[generation]["genes"][individual][2])
-
-    # # Init
-    # values_list = []
-    # max_down_range_list = []
-    # max_height_list = []
-
-    # # Plot
-    # fig, ax = plt.subplots(figsize=(10, 8))
-    # for values, gains in zip(values_list, gain_list):
-    #     ax.plot(values['x'], values['h'], label=f"K$_p$={gains[0]}, K$_i$={gains[1]}, K$_d$={gains[2]}")
-    # ax.set_xlabel('Downrage (km)')
-    # ax.set_ylabel('Height (km)')
-    # ax.set_title('2D Position')
-    # ax.grid(True)
-    # ax.legend()
-    # ax.set_xlim(0, max(max_down_range_list))
-    # ax.set_ylim(0, max(max_height_list)*1.1)
-    # plt.savefig('data/output/images/dispersed_trajectories.png')
+    # Prints
+    for generation in range(0,len(log)):
+        print("Generation: ", generation+1)
+        for individual in range(0,len(log[generation]["genes"])):
+            print("Individual:", individual+1, "Fitness:", log[generation]["fitness"][individual][0], "Values:", log[generation]["genes"][individual][0],log[generation]["genes"][individual][1],log[generation]["genes"][individual][2])
 
     # Function to update the plot
     def update_plot(frame):
@@ -634,7 +617,7 @@ if __name__ == '__main__':
             x = log[frame]["genes"][individual][0]
             y = log[frame]["genes"][individual][1]
             z = log[frame]["genes"][individual][2]
-            ax.scatter(x, y, z, c=colors[frame], marker='o')
+            ax.scatter(x, y, z, c=colors[frame], marker='o', s=40)
 
         # Add legend
         legend_handles = [mpatches.Patch(color=color, label=label) for color, label in zip(colors[:frame+1], generation_labels)]
