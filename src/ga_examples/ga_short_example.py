@@ -57,12 +57,12 @@ def main():
     stats.register("std", numpy.std)
     stats.register("min", numpy.min)
     stats.register("max", numpy.max)
-    stats.register("fitness", lambda pop: [ind for ind in pop])
-    stats.register("genes", lambda genes: [ind for ind in pop])
+    #stats.register("fitness", lambda pop: [ind for ind in pop])
+    #stats.register("genes", lambda genes: [ind for ind in pop])
     
     # Calling the algo
     pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=50, 
-                                   stats=stats, halloffame=hof, verbose=False)
+                                   stats=stats, halloffame=hof, verbose=True)
 
     # Print the best one
     best_ind = tools.selBest(pop, 1)[0]
@@ -73,6 +73,6 @@ def main():
 
 if __name__ == "__main__":
     pop, log, hof = main()
-    print(log[0]["fitness"][0][0])  # Generation, Key, Particpant, Integer to get it out of a tuple
-    print(log[0]["genes"][0])
-    print(log[0]["genes"][0][0], log[0]["genes"][0][1], log[0]["genes"][0][2])      # Geeneration, Key, Particpant, Value
+    # print(log[0]["fitness"][0][0])  # Generation, Key, Particpant, Integer to get it out of a tuple
+    # print(log[0]["genes"][0])
+    # print(log[0]["genes"][0][0], log[0]["genes"][0][1], log[0]["genes"][0][2])      # Geeneration, Key, Particpant, Value

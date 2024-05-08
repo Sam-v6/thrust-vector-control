@@ -3,6 +3,9 @@ import numpy as np
 from scipy import integrate
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib import animation
+from mpl_toolkits import mplot3d
+import matplotlib.patches as mpatches
 import array
 import random
 import copy
@@ -564,7 +567,7 @@ def main():
     random.seed(64)
 
     # Starting population size
-    pop = toolbox.population(n=30)                                           # Initial pop size
+    pop = toolbox.population(n=5)                                           # Initial pop size
 
     # Setting algo and stats
     hof = tools.HallOfFame(1)
@@ -577,8 +580,8 @@ def main():
     stats.register("genes", lambda genes: [ind for ind in pop])
     
     # Calling the algo
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=10,      # Generations
-                                   stats=stats, halloffame=hof, verbose=False)
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=2,      # Generations
+                                   stats=stats, halloffame=hof, verbose=True)
 
     # Print the best one
     best_ind = tools.selBest(pop, 1)[0]
@@ -591,10 +594,10 @@ if __name__ == '__main__':
 
     pop, log, hof = main()
     
-    for generation in range(0,len(log)):
-        print("Generation: ", generation+1)
-        for individual in range(0,len(log[generation]["genes"])):
-            print("Individual:", individual+1, "Fitness:", log[generation]["fitness"][individual][0], "Values:", log[generation]["genes"][individual][0],log[generation]["genes"][individual][1],log[generation]["genes"][individual][2])
+    # for generation in range(0,len(log)):
+    #     print("Generation: ", generation+1)
+    #     for individual in range(0,len(log[generation]["genes"])):
+    #         print("Individual:", individual+1, "Fitness:", log[generation]["fitness"][individual][0], "Values:", log[generation]["genes"][individual][0],log[generation]["genes"][individual][1],log[generation]["genes"][individual][2])
 
     # # Init
     # values_list = []
@@ -613,6 +616,41 @@ if __name__ == '__main__':
     # ax.set_xlim(0, max(max_down_range_list))
     # ax.set_ylim(0, max(max_height_list)*1.1)
     # plt.savefig('data/output/images/dispersed_trajectories.png')
+
+    # Function to update the plot
+    def update_plot(frame):
+        ax.cla()  # Clear the previous plot
+        ax.set_xlabel('K$_p$')
+        ax.set_ylabel('K$_i$')
+        ax.set_zlabel('K$_d$')
+        ax.set_title(f'Generational Gain Selections (Generation {frame+1})')
+        ax.set_xlim([0, 100])  # Adjust limits as needed
+        ax.set_ylim([0, 100])
+        ax.set_zlim([0, 100])
+        
+        colors = ['r', 'g', 'b']  # Define colors for each generation
+        generation_labels = []
+        for individual in range(len(log[frame]["genes"])):
+            x = log[frame]["genes"][individual][0]
+            y = log[frame]["genes"][individual][1]
+            z = log[frame]["genes"][individual][2]
+            ax.scatter(x, y, z, c=colors[frame], marker='o')
+
+        # Add legend
+        legend_handles = [mpatches.Patch(color=color, label=label) for color, label in zip(colors[:frame+1], generation_labels)]
+        ax.legend(handles=legend_handles, loc='upper left')
+
+    # Create a 3D plot
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Generate the animation
+    ani = animation.FuncAnimation(fig, update_plot, frames=len(log), interval=1000)
+    # Save the animation as a GIF
+    ani.save('data/output/images/generational_gains_animation.gif', writer='pillow', fps=1)
+   
+   
+
 
 
 
