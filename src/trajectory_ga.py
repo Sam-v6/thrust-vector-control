@@ -567,7 +567,7 @@ def main():
     random.seed(64)
 
     # Starting population size
-    pop = toolbox.population(n=5)                                           # Initial pop size
+    pop = toolbox.population(n=10)                                           # Initial pop size
 
     # Setting algo and stats
     hof = tools.HallOfFame(1)
@@ -580,7 +580,7 @@ def main():
     stats.register("genes", lambda genes: [ind for ind in pop])
     
     # Calling the algo
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=2,      # Generations
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=5,      # Generations
                                    stats=stats, halloffame=hof, verbose=True)
 
     # Print the best one
@@ -628,7 +628,7 @@ if __name__ == '__main__':
         ax.set_ylim([0, 100])
         ax.set_zlim([0, 100])
         
-        colors = ['r', 'g', 'b']  # Define colors for each generation
+        colors = ['blue', 'red', 'green', 'orange', 'magenta', 'lime' ]  # Define colors for each generation
         generation_labels = []
         for individual in range(len(log[frame]["genes"])):
             x = log[frame]["genes"][individual][0]
