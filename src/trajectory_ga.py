@@ -2,9 +2,7 @@
 import numpy as np
 from scipy import integrate
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 from matplotlib import animation
-from mpl_toolkits import mplot3d
 import matplotlib.patches as mpatches
 import array
 import random
@@ -592,6 +590,7 @@ def main():
 
 if __name__ == '__main__':
 
+    # Calling genetic algo
     pop, log, hof = main()
     
     # Prints
