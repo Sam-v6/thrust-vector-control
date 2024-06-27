@@ -455,7 +455,7 @@ def generate_trajectory(pidController):
         return flight_arrow, thrust_arrow
 
     # Call update_quiver function inside the loop
-    ani = FuncAnimation(fig, update, frames=len(save_values['t']) // 500, repeat=True) # interval?
+    ani = FuncAnimation(fig, update, frames=len(save_values['t'][0:last_index_positive]) // 500, repeat=True) # interval?
     
     # Set axes labels and title
     ax.set_xlabel('Downrange Position (km)')
@@ -486,6 +486,7 @@ if __name__ == '__main__':
     # PID
     #gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
     gain_list = [[51,88,99]]
+    #gain_list = [[98,0,0]]
     for gains in gain_list:
 
         pidController = Controller(gains[0], gains[1], gains[2], desired_flight_path_angle, bounds)
@@ -531,6 +532,7 @@ if __name__ == '__main__':
     ax.set_xlim(0, max(max_down_range_list))
     ax.set_ylim(0, max(max_height_list)*1.1)
     plt.savefig('data/output/images/dispersed_trajectories.png')
+
 
 
 
