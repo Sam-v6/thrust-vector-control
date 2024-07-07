@@ -411,7 +411,7 @@ def generate_trajectory(pidController):
     # axs[fig_num].set_xlim(0, save_values['t'][last_index_positive])
 
     # plt.tight_layout()
-    # plt.savefig('data/output/images/combined_plots.png')
+    # plt.savefig('data/output/combined_plots.png')
 
     # #------------------------------------------------
     # # Trajectory Plot
@@ -435,7 +435,7 @@ def generate_trajectory(pidController):
     # ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
 
     # # Save the plot
-    # plt.savefig('data/output/images/combined_trajectory.png')
+    # plt.savefig('data/output/combined_trajectory.png')
 
     # #------------------------------------------------
     # # Trajectory Animation
@@ -473,7 +473,7 @@ def generate_trajectory(pidController):
     # ax.legend()
     # ax.set_xlim(0, max(save_values['x'][0:last_index_positive]))
     # ax.set_ylim(0, save_values['h'][np.argmax(save_values['h'])]*1.1)
-    # ani.save('data/output/images/combined_trajectory.gif', writer='pillow')
+    # ani.save('data/output/combined_trajectory.gif', writer='pillow')
 
     #------------------------------------------------
     # Printing
@@ -629,7 +629,7 @@ if __name__ == '__main__':
     # Generate the animation
     ani = animation.FuncAnimation(fig, update_plot, frames=len(log), interval=1000)
     # Save the animation as a GIF
-    ani.save('data/output/images/generational_gains_animation.gif', writer='pillow', fps=1)
+    ani.save('data/output/generational_gains_animation.gif', writer='pillow', fps=1)
    
    
 
