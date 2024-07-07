@@ -1,5 +1,5 @@
 # Initial Conditions
-v_init: 0
-theta_init: 88
-h_init: 0
-x_init: 0
+v_init: 0         # [m/s]
+theta_init: 88    # [degrees]
+h_init: 0         # [m]
+x_init: 0         # [m]

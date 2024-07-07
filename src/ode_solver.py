@@ -3,9 +3,7 @@ import numpy as np
 
 # Local imports
 from util import normalize_radians
-from util import load_input_data
 from environment import determine_density
-
 
 class OdeSolver:
     def __init__(self, pidController, rocket_params, initial_conditions):
