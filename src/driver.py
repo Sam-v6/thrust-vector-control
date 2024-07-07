@@ -9,24 +9,26 @@ from controller import Controller
 from ode_solver import OdeSolver
 from util import load_input_data
 
-def generate_trajectory(pidController, ):
+def generate_individual_trajectory(pidController, rocket_params, initial_conditions):
 
-    #------------------------------------------------
-    # ODE Solving
-    #------------------------------------------------
     # Create ODE object
     odeSolver = OdeSolver(pidController, rocket_params, initial_conditions)
 
     # Solve ODEs
     sol = integrate.solve_ivp(odeSolver.calculate_trajectory, (0,5000), [initial_conditions["v_init"], initial_conditions["theta_init"], initial_conditions["h_init"], initial_conditions["x_init"]], max_step = 0.1)
 
-    # Final values
+    # Grab final values
     v = sol.y[0]                        # m/s
     theta = sol.y[1]                    # radians
     h = sol.y[2]                        # m
     x = sol.y[3]                        # m
     t = sol.t                           # s
-   
+
+    # Return
+    return odeSolver
+
+def plot_individual_trajectory(odeSolver):
+
     #------------------------------------------------
     # Post Processing
     #------------------------------------------------
@@ -212,16 +214,9 @@ def generate_trajectory(pidController, ):
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
     ani.save('data/output/combined_trajectory.gif', writer='pillow')
 
-    #------------------------------------------------
-    # Printing
-    #------------------------------------------------
-    #print("Max Height [km]:",odeSolver.hmax/1e3)
-    print(f"Run Complete for: Kp={pidController.Kp}, Ki={pidController.Ki}, Kd={pidController.Kd}")
-
-    save_values = {"x": odeSolver.x_history, "h": odeSolver.h_history}
-
     # Return
-    return save_values, last_index_positive
+    return last_index_positive
+
 
 if __name__ == '__main__':
 
@@ -238,15 +233,23 @@ if __name__ == '__main__':
     gain_list = [[51,88,99]]
     for gains in gain_list:
 
+        # Create controller object
         pidController = Controller(gains[0], gains[1], gains[2], rocket_params["DESIRED_FLIGHT_ANGLE"], rocket_params["TVC_BOUNDS"])
 
-        # Call trajs
-        values, last_index_positive = generate_trajectory(pidController)
+        # Generate individual trajectory
+        odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
+
+        # Create individual plots for each trajectory
+        last_index_positive = plot_individual_trajectory(odeSolver)
+
+        # Status
+        print("Max Height [km]:",odeSolver.hmax/1e3)
+        print(f"Run Complete for: Kp={pidController.Kp}, Ki={pidController.Ki}, Kd={pidController.Kd}")
+
+        values = {"x": odeSolver.x_history, "h": odeSolver.h_history}
         values_list.append(values.copy())
         max_down_range_list.append(values['x'][last_index_positive])
         max_height_list.append(max(values['h'][0:last_index_positive]))
-
-        # Clear values (used to be here)
 
     # Plot
     fig, ax = plt.subplots(figsize=(10, 8))
