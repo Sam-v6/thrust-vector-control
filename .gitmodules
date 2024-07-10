@@ -1,0 +1,3 @@
+[submodule "lib/plotter"]
+	path = lib/plotter
+	url = git@github.com:Sam-v6/plotter.git
