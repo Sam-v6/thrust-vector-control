@@ -3,11 +3,15 @@ import numpy as np
 from scipy import integrate
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import sys
+import os
 
 # Local imports
 from controller import Controller
 from ode_solver import OdeSolver
 from util import load_input_data
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from lib.plotter.plotter import Plotter
 
 def generate_individual_trajectory(pidController, rocket_params, initial_conditions):
 
@@ -51,6 +55,111 @@ def plot_individual_trajectory(odeSolver):
     h_array = np.array(odeSolver.h_history)
     reversed_h_array = h_array[::-1]
     last_index_positive = len(h_array) - np.argmax(reversed_h_array > 0) - 1
+
+    #------------------------------------------------
+    # Plotter implementation
+    #------------------------------------------------
+    # Single plot configuration with xlim and ylim
+    phase_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.phase_history, 'label': "Phase"}],
+        'title': "Phase",
+        'xlabel': "Time (s)",
+        'ylabel': "Phase",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [0, 0]
+    }
+
+    height_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.h_history, 'label': "Height"}],
+        'title': "Height",
+        'xlabel': "Time (s)",
+        'ylabel': "Height (km)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'ylim': [0, max(odeSolver.h_history[0:last_index_positive])*1.1],
+        'plot': [1, 0]  
+    }
+
+    downrange_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.x_history, 'label': "Downrange"}],
+        'title': "Downrange",
+        'xlabel': "Time (s)",
+        'ylabel': "Downrange (km)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'ylim': [0, max(odeSolver.x_history[0:last_index_positive])*1.1],
+        'plot': [2, 0]  
+    }
+
+    velocity_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.v_history, 'label': "Velocity"}],
+        'title': "Velocity",
+        'xlabel': "Time (s)",
+        'ylabel': "Velocity (km/s)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'ylim': [0, max(odeSolver.v_history[0:last_index_positive])*1.1],
+        'plot': [3, 0]  
+    }
+
+    flight_angles_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_history, 'label': "$\\theta$"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_error_history, 'label': "$\\theta_e$"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.psi_history, 'label': "$\\psi$"}],
+        'title': "Flight Angles",
+        'xlabel': "Time (s)",
+        'ylabel': "Angle (deg)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [4, 0]  
+    }
+
+    mass_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.m_history, 'label': "Total Mass"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.mp_descent_history, 'label': "Descent Propellant Mass"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.mp_ascent_history, 'label': "Ascent Propellant Mass"}],
+        'title': "Mass",
+        'xlabel': "Time (s)",
+        'ylabel': "Mass (MT)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [5, 0]  
+    }
+
+    thrust_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.F_history, 'label': "Thrust"}],
+        'title': "Thrust",
+        'xlabel': "Time (s)",
+        'ylabel': "Thrust (kN)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [6, 0]  
+    }
+
+    density_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.rho_history, 'label': "Density"}],
+        'title': "Density",
+        'xlabel': "Time (s)",
+        'ylabel': "Density (kg/m$^3$)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [7, 0]  
+    }
+
+    gravity_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.g_history, 'label': "Gravity"}],
+        'title': "Gravity",
+        'xlabel': "Time (s)",
+        'ylabel': "Gravity (m/s$^2$)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [8, 0]  
+    }
+
+    # Create a Plotter instance with a single plot configuration
+    combinedPlots = Plotter("data/output/plotter_combined_plots.png", 
+                                    phase_plot,
+                                    height_plot, 
+                                    downrange_plot, 
+                                    velocity_plot,
+                                    flight_angles_plot,
+                                    mass_plot,
+                                    thrust_plot,
+                                    density_plot,
+                                    gravity_plot)
+    combinedPlots.plot()
 
     #------------------------------------------------
     # Subplot
