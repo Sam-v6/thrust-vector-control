@@ -326,7 +326,6 @@ def plot_individual_trajectory(odeSolver):
     # Return
     return last_index_positive
 
-
 if __name__ == '__main__':
 
     # Init
