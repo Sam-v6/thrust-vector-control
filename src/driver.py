@@ -14,6 +14,8 @@ from deap import algorithms
 from deap import base
 from deap import creator
 from deap import tools
+import multiprocessing
+import time
 
 # Local imports
 from controller import Controller
@@ -40,7 +42,7 @@ def generate_individual_trajectory(pidController, rocket_params, initial_conditi
     # Return
     return odeSolver
 
-def plot_individual_trajectory(odeSolver):
+def post_process_individual_trajectory(odeSolver):
 
     #------------------------------------------------
     # Post Processing
@@ -65,275 +67,280 @@ def plot_individual_trajectory(odeSolver):
     reversed_h_array = h_array[::-1]
     last_index_positive = len(h_array) - np.argmax(reversed_h_array > 0) - 1
 
-    # #------------------------------------------------
-    # # Plotter implementation
-    # #------------------------------------------------
-    # # Single plot configuration with xlim and ylim
-    # phase_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.phase_history, 'label': "Phase"}],
-    #     'title': "Phase",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Phase",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'plot': [0, 0]
-    # }
+    return odeSolver, last_index_positive
 
-    # height_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.h_history, 'label': "Height"}],
-    #     'title': "Height",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Height (km)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'ylim': [0, max(odeSolver.h_history[0:last_index_positive])*1.1],
-    #     'plot': [1, 0]  
-    # }
+def plot_individual_trajectory(odeSolver, last_index_positive):
 
-    # downrange_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.x_history, 'label': "Downrange"}],
-    #     'title': "Downrange",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Downrange (km)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'ylim': [0, max(odeSolver.x_history[0:last_index_positive])*1.1],
-    #     'plot': [2, 0]  
-    # }
+    #------------------------------------------------
+    # Plotter implementation
+    #------------------------------------------------
+    # Single plot configuration with xlim and ylim
+    phase_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.phase_history, 'label': "Phase"}],
+        'title': "Phase",
+        'xlabel': "Time (s)",
+        'ylabel': "Phase",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [0, 0]
+    }
 
-    # velocity_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.v_history, 'label': "Velocity"}],
-    #     'title': "Velocity",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Velocity (km/s)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'ylim': [0, max(odeSolver.v_history[0:last_index_positive])*1.1],
-    #     'plot': [3, 0]  
-    # }
+    height_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.h_history, 'label': "Height"}],
+        'title': "Height",
+        'xlabel': "Time (s)",
+        'ylabel': "Height (km)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'ylim': [0, max(odeSolver.h_history[0:last_index_positive])*1.1],
+        'plot': [1, 0]  
+    }
 
-    # flight_angles_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_history, 'label': "$\\theta$"},
-    #                  {'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_error_history, 'label': "$\\theta_e$"},
-    #                  {'x_data': odeSolver.t_history, 'y_data': odeSolver.psi_history, 'label': "$\\psi$"}],
-    #     'title': "Flight Angles",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Angle (deg)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'plot': [4, 0]  
-    # }
+    downrange_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.x_history, 'label': "Downrange"}],
+        'title': "Downrange",
+        'xlabel': "Time (s)",
+        'ylabel': "Downrange (km)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'ylim': [0, max(odeSolver.x_history[0:last_index_positive])*1.1],
+        'plot': [2, 0]  
+    }
 
-    # mass_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.m_history, 'label': "Total Mass"},
-    #                  {'x_data': odeSolver.t_history, 'y_data': odeSolver.mp_descent_history, 'label': "Descent Propellant Mass"},
-    #                  {'x_data': odeSolver.t_history, 'y_data': odeSolver.mp_ascent_history, 'label': "Ascent Propellant Mass"}],
-    #     'title': "Mass",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Mass (MT)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'plot': [5, 0]  
-    # }
+    velocity_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.v_history, 'label': "Velocity"}],
+        'title': "Velocity",
+        'xlabel': "Time (s)",
+        'ylabel': "Velocity (km/s)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'ylim': [0, max(odeSolver.v_history[0:last_index_positive])*1.1],
+        'plot': [3, 0]  
+    }
 
-    # thrust_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.F_history, 'label': "Thrust"}],
-    #     'title': "Thrust",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Thrust (kN)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'plot': [6, 0]  
-    # }
+    flight_angles_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_history, 'label': "$\\theta$"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_error_history, 'label': "$\\theta_e$"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.psi_history, 'label': "$\\psi$"}],
+        'title': "Flight Angles",
+        'xlabel': "Time (s)",
+        'ylabel': "Angle (deg)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [4, 0]  
+    }
 
-    # density_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.rho_history, 'label': "Density"}],
-    #     'title': "Density",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Density (kg/m$^3$)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'plot': [7, 0]  
-    # }
+    mass_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.m_history, 'label': "Total Mass"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.mp_descent_history, 'label': "Descent Propellant Mass"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.mp_ascent_history, 'label': "Ascent Propellant Mass"}],
+        'title': "Mass",
+        'xlabel': "Time (s)",
+        'ylabel': "Mass (MT)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [5, 0]  
+    }
 
-    # gravity_plot = {
-    #     'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.g_history, 'label': "Gravity"}],
-    #     'title': "Gravity",
-    #     'xlabel': "Time (s)",
-    #     'ylabel': "Gravity (m/s$^2$)",
-    #     'xlim': [0, odeSolver.t_history[last_index_positive]], 
-    #     'plot': [8, 0]  
-    # }
+    thrust_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.F_history, 'label': "Thrust"}],
+        'title': "Thrust",
+        'xlabel': "Time (s)",
+        'ylabel': "Thrust (kN)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [6, 0]  
+    }
 
-    # # Create a Plotter instance with a single plot configuration
-    # combinedPlots = Plotter("data/output/plotter_combined_plots.png", 
-    #                                 phase_plot,
-    #                                 height_plot, 
-    #                                 downrange_plot, 
-    #                                 velocity_plot,
-    #                                 flight_angles_plot,
-    #                                 mass_plot,
-    #                                 thrust_plot,
-    #                                 density_plot,
-    #                                 gravity_plot)
-    # combinedPlots.plot()
+    density_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.rho_history, 'label': "Density"}],
+        'title': "Density",
+        'xlabel': "Time (s)",
+        'ylabel': "Density (kg/m$^3$)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [7, 0]  
+    }
 
-    # #------------------------------------------------
-    # # Subplot
-    # #------------------------------------------------
-    # # Create subplots with 4 rows and 1 column
-    # fig, axs = plt.subplots(3, 3, figsize=(35, 20))
-    # fig_num = -1
+    gravity_plot = {
+        'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.g_history, 'label': "Gravity"}],
+        'title': "Gravity",
+        'xlabel': "Time (s)",
+        'ylabel': "Gravity (m/s$^2$)",
+        'xlim': [0, odeSolver.t_history[last_index_positive]], 
+        'plot': [8, 0]  
+    }
 
-    # # Plot Phase
-    # fig_num = fig_num + 1
-    # axs[0,0].plot(odeSolver.t_history, odeSolver.phase_history)
-    # axs[0,0].set_xlabel('Time (s)')
-    # axs[0,0].set_ylabel('Phase')
-    # axs[0,0].set_title('Phase')
-    # axs[0,0].grid(True)
-    # axs[0,0].set_xlim(0, odeSolver.t_history[last_index_positive])
+    # Create a Plotter instance with a single plot configuration
+    combinedPlots = Plotter("data/output/plotter_combined_plots.png", 
+                                    phase_plot,
+                                    height_plot, 
+                                    downrange_plot, 
+                                    velocity_plot,
+                                    flight_angles_plot,
+                                    mass_plot,
+                                    thrust_plot,
+                                    density_plot,
+                                    gravity_plot)
+    combinedPlots.plot()
 
-    # # Plot Height
-    # fig_num = fig_num + 1
-    # axs[1,0].plot(odeSolver.t_history, odeSolver.h_history)
-    # axs[1,0].set_xlabel('Time (s)')
-    # axs[1,0].set_ylabel('Height (km)')
-    # axs[1,0].set_title('Height')
-    # axs[1,0].grid(True)
-    # axs[1,0].set_xlim(0, odeSolver.t_history[last_index_positive])
-    # axs[1,0].set_ylim(0, max(odeSolver.h_history)*1.1)
+    #------------------------------------------------
+    # Subplot
+    #------------------------------------------------
+    # Create subplots with 4 rows and 1 column
+    fig, axs = plt.subplots(3, 3, figsize=(35, 20))
+    fig_num = -1
 
-    # # Plot Downrange
-    # fig_num = fig_num + 1
-    # axs[2,0].plot(odeSolver.t_history, odeSolver.x_history)
-    # axs[2,0].set_xlabel('Time (s)')
-    # axs[2,0].set_ylabel('Distance (km)')
-    # axs[2,0].set_title('Downrange')
-    # axs[2,0].grid(True)
-    # axs[2,0].set_xlim(0, odeSolver.t_history[last_index_positive])
-    # axs[2,0].set_ylim(0, max(odeSolver.x_history[0:last_index_positive])*1.1)
+    # Plot Phase
+    fig_num = fig_num + 1
+    axs[0,0].plot(odeSolver.t_history, odeSolver.phase_history)
+    axs[0,0].set_xlabel('Time (s)')
+    axs[0,0].set_ylabel('Phase')
+    axs[0,0].set_title('Phase')
+    axs[0,0].grid(True)
+    axs[0,0].set_xlim(0, odeSolver.t_history[last_index_positive])
 
-    # # Plot Velocity
-    # fig_num = fig_num + 1    
-    # axs[0,1].plot(odeSolver.t_history,odeSolver.v_history)
-    # axs[0,1].set_xlabel('Time (s)')
-    # axs[0,1].set_ylabel('Velocity (km/s)')
-    # axs[0,1].set_title('Velocity')
-    # axs[0,1].grid(True)
-    # axs[0,1].set_xlim(0, odeSolver.t_history[last_index_positive])
-    # axs[0,1].set_ylim(0, max(odeSolver.v_history[0:last_index_positive])*1.1)
+    # Plot Height
+    fig_num = fig_num + 1
+    axs[1,0].plot(odeSolver.t_history, odeSolver.h_history)
+    axs[1,0].set_xlabel('Time (s)')
+    axs[1,0].set_ylabel('Height (km)')
+    axs[1,0].set_title('Height')
+    axs[1,0].grid(True)
+    axs[1,0].set_xlim(0, odeSolver.t_history[last_index_positive])
+    axs[1,0].set_ylim(0, max(odeSolver.h_history)*1.1)
 
-    # # Plot Angles
-    # fig_num = fig_num + 1
-    # axs[1,1].plot(odeSolver.t_history, odeSolver.theta_history, label="$\\theta$")
-    # axs[1,1].plot(odeSolver.t_history, odeSolver.theta_error_history, label="$\\theta_e$")
-    # axs[1,1].plot(odeSolver.t_history, odeSolver.psi_history, label="$\\psi$")
-    # axs[1,1].set_xlabel('Time (s)')
-    # axs[1,1].set_ylabel('Angle (deg)')
-    # axs[1,1].set_title('Flight Angles')
-    # axs[1,1].grid(True)
-    # axs[1,1].legend()
-    # axs[1,1].set_xlim(0, odeSolver.t_history[last_index_positive])
+    # Plot Downrange
+    fig_num = fig_num + 1
+    axs[2,0].plot(odeSolver.t_history, odeSolver.x_history)
+    axs[2,0].set_xlabel('Time (s)')
+    axs[2,0].set_ylabel('Distance (km)')
+    axs[2,0].set_title('Downrange')
+    axs[2,0].grid(True)
+    axs[2,0].set_xlim(0, odeSolver.t_history[last_index_positive])
+    axs[2,0].set_ylim(0, max(odeSolver.x_history[0:last_index_positive])*1.1)
 
-    # # Mass
-    # fig_num = fig_num + 1
-    # axs[2,1].plot(odeSolver.t_history, odeSolver.m_history, label="Total Mass")
-    # axs[2,1].plot(odeSolver.t_history, odeSolver.mp_descent_history, label="Descent Propellant Mass")
-    # axs[2,1].plot(odeSolver.t_history, odeSolver.mp_ascent_history, label="Ascent Propellant Mass")
-    # axs[2,1].set_xlabel('Time (s)')
-    # axs[2,1].set_ylabel('Mass [MT]')
-    # axs[2,1].set_title('Mass')
-    # axs[2,1].grid(True)
-    # axs[2,1].legend()
-    # axs[2,1].set_xlim(0, odeSolver.t_history[last_index_positive])
+    # Plot Velocity
+    fig_num = fig_num + 1    
+    axs[0,1].plot(odeSolver.t_history,odeSolver.v_history)
+    axs[0,1].set_xlabel('Time (s)')
+    axs[0,1].set_ylabel('Velocity (km/s)')
+    axs[0,1].set_title('Velocity')
+    axs[0,1].grid(True)
+    axs[0,1].set_xlim(0, odeSolver.t_history[last_index_positive])
+    axs[0,1].set_ylim(0, max(odeSolver.v_history[0:last_index_positive])*1.1)
 
-    # # Thrust
-    # fig_num = fig_num + 1
-    # axs[0,2].plot(odeSolver.t_history, odeSolver.F_history, label="Thrust")
-    # axs[0,2].set_xlabel('Time (s)')
-    # axs[0,2].set_ylabel('Thrust (kN)')
-    # axs[0,2].set_title('Thrust')
-    # axs[0,2].grid(True)
-    # axs[0,2].set_xlim(0, odeSolver.t_history[last_index_positive])
+    # Plot Angles
+    fig_num = fig_num + 1
+    axs[1,1].plot(odeSolver.t_history, odeSolver.theta_history, label="$\\theta$")
+    axs[1,1].plot(odeSolver.t_history, odeSolver.theta_error_history, label="$\\theta_e$")
+    axs[1,1].plot(odeSolver.t_history, odeSolver.psi_history, label="$\\psi$")
+    axs[1,1].set_xlabel('Time (s)')
+    axs[1,1].set_ylabel('Angle (deg)')
+    axs[1,1].set_title('Flight Angles')
+    axs[1,1].grid(True)
+    axs[1,1].legend()
+    axs[1,1].set_xlim(0, odeSolver.t_history[last_index_positive])
 
-    # # Density
-    # fig_num = fig_num + 1
-    # axs[1,2].plot(odeSolver.t_history, odeSolver.rho_history, label="Density")
-    # axs[1,2].set_xlabel('Time (s)')
-    # axs[1,2].set_ylabel('Density (kg/m$^3$)')
-    # axs[1,2].set_title('Density')
-    # axs[1,2].grid(True)
-    # axs[1,2].set_xlim(0, odeSolver.t_history[last_index_positive])
+    # Mass
+    fig_num = fig_num + 1
+    axs[2,1].plot(odeSolver.t_history, odeSolver.m_history, label="Total Mass")
+    axs[2,1].plot(odeSolver.t_history, odeSolver.mp_descent_history, label="Descent Propellant Mass")
+    axs[2,1].plot(odeSolver.t_history, odeSolver.mp_ascent_history, label="Ascent Propellant Mass")
+    axs[2,1].set_xlabel('Time (s)')
+    axs[2,1].set_ylabel('Mass [MT]')
+    axs[2,1].set_title('Mass')
+    axs[2,1].grid(True)
+    axs[2,1].legend()
+    axs[2,1].set_xlim(0, odeSolver.t_history[last_index_positive])
 
-    # # Gravity
-    # fig_num = fig_num + 1
-    # axs[2,2].plot(odeSolver.t_history, odeSolver.g_history, label="Gravity")
-    # axs[2,2].set_xlabel('Time (s)')
-    # axs[2,2].set_ylabel('Gravity (m/s$^2$)')
-    # axs[2,2].set_title('Gravity')
-    # axs[2,2].grid(True)
-    # axs[2,2].set_xlim(0, odeSolver.t_history[last_index_positive])
+    # Thrust
+    fig_num = fig_num + 1
+    axs[0,2].plot(odeSolver.t_history, odeSolver.F_history, label="Thrust")
+    axs[0,2].set_xlabel('Time (s)')
+    axs[0,2].set_ylabel('Thrust (kN)')
+    axs[0,2].set_title('Thrust')
+    axs[0,2].grid(True)
+    axs[0,2].set_xlim(0, odeSolver.t_history[last_index_positive])
 
-    # plt.tight_layout()
-    # plt.savefig('data/output/combined_plots.png')
+    # Density
+    fig_num = fig_num + 1
+    axs[1,2].plot(odeSolver.t_history, odeSolver.rho_history, label="Density")
+    axs[1,2].set_xlabel('Time (s)')
+    axs[1,2].set_ylabel('Density (kg/m$^3$)')
+    axs[1,2].set_title('Density')
+    axs[1,2].grid(True)
+    axs[1,2].set_xlim(0, odeSolver.t_history[last_index_positive])
 
-    # #------------------------------------------------
-    # # Trajectory Plot
-    # #------------------------------------------------
-    # # Create a figure and axes
-    # fig, ax = plt.subplots(figsize=(10,8))
-    # ax.plot(odeSolver.x_history, odeSolver.h_history, color='gray', linestyle="--")
-    # for i in range(0, len(odeSolver.t_history), 500):
-    #     flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
-    #     flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
-    #     thrust_angle_vector_x = np.cos(odeSolver.psi_history[i] * np.pi / 180)
-    #     thrust_angle_vector_y = np.sin(odeSolver.psi_history[i] * np.pi / 180)
-    #     ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=25, color='r', label='Body Vector')
-    #     ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], -thrust_angle_vector_x, -thrust_angle_vector_y, scale=35, color='b', label='Thrust Vector')
-    # ax.set_xlabel('Downrange Position (km)')
-    # ax.set_ylabel('Height (km)')
-    # ax.set_title('2D Position')
-    # ax.grid(True)
-    # ax.legend(handles=ax.get_legend_handles_labels()[0][:2], labels=ax.get_legend_handles_labels()[1][:2])          # This takes only the first two entries of the legend because it repeats
-    # ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
-    # ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
+    # Gravity
+    fig_num = fig_num + 1
+    axs[2,2].plot(odeSolver.t_history, odeSolver.g_history, label="Gravity")
+    axs[2,2].set_xlabel('Time (s)')
+    axs[2,2].set_ylabel('Gravity (m/s$^2$)')
+    axs[2,2].set_title('Gravity')
+    axs[2,2].grid(True)
+    axs[2,2].set_xlim(0, odeSolver.t_history[last_index_positive])
 
-    # # Save the plot
-    # plt.savefig('data/output/combined_trajectory.png')
+    plt.tight_layout()
+    plt.savefig('data/output/combined_plots.png')
+    plt.close()
 
-    # #------------------------------------------------
-    # # Trajectory Animation
-    # #------------------------------------------------
-    # # Create a figure and axes
-    # fig, ax = plt.subplots(figsize=(10, 8))
+    #------------------------------------------------
+    # Trajectory Plot
+    #------------------------------------------------
+    # Create a figure and axes
+    fig, ax = plt.subplots(figsize=(10,8))
+    ax.plot(odeSolver.x_history, odeSolver.h_history, color='gray', linestyle="--")
+    for i in range(0, len(odeSolver.t_history), 500):
+        flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
+        flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
+        thrust_angle_vector_x = np.cos(odeSolver.psi_history[i] * np.pi / 180)
+        thrust_angle_vector_y = np.sin(odeSolver.psi_history[i] * np.pi / 180)
+        ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=25, color='r', label='Body Vector')
+        ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], -thrust_angle_vector_x, -thrust_angle_vector_y, scale=35, color='b', label='Thrust Vector')
+    ax.set_xlabel('Downrange Position (km)')
+    ax.set_ylabel('Height (km)')
+    ax.set_title('2D Position')
+    ax.grid(True)
+    ax.legend(handles=ax.get_legend_handles_labels()[0][:2], labels=ax.get_legend_handles_labels()[1][:2])          # This takes only the first two entries of the legend because it repeats
+    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
+    ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
 
-    # # Create quiver plots outside the loop
-    # flight_arrow = ax.quiver([], [], [], [], scale=25, color='r', label='Body Vector')
-    # thrust_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Thrust Vector')
+    # Save the plot
+    plt.savefig('data/output/combined_trajectory.png')
 
-    # # Function to update the plot for each frame of animation
-    # def update(frame):
-    #     i = frame * 500
-    #     x_pos = odeSolver.x_history[i]
-    #     y_pos = odeSolver.h_history[i]
-    #     flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
-    #     flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
-    #     thrust_angle_vector_x = np.cos(odeSolver.psi_history[i] * np.pi / 180)
-    #     thrust_angle_vector_y = np.sin(odeSolver.psi_history[i] * np.pi / 180)
-    #     flight_arrow.set_offsets((x_pos, y_pos))
-    #     flight_arrow.set_UVC(flight_angle_vector_x, flight_angle_vector_y)
-    #     thrust_arrow.set_offsets((x_pos, y_pos))
-    #     thrust_arrow.set_UVC(-thrust_angle_vector_x, -thrust_angle_vector_y)
-    #     return flight_arrow, thrust_arrow
+    #------------------------------------------------
+    # Trajectory Animation
+    #------------------------------------------------
+    # Create a figure and axes
+    fig, ax = plt.subplots(figsize=(10, 8))
 
-    # # Call update_quiver function inside the loop
-    # ani = FuncAnimation(fig, update, frames=len(odeSolver.t_history) // 500, repeat=True) # interval?
+    # Create quiver plots outside the loop
+    flight_arrow = ax.quiver([], [], [], [], scale=25, color='r', label='Body Vector')
+    thrust_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Thrust Vector')
+
+    # Function to update the plot for each frame of animation
+    def update(frame):
+        i = frame * 500
+        x_pos = odeSolver.x_history[i]
+        y_pos = odeSolver.h_history[i]
+        flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
+        flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
+        thrust_angle_vector_x = np.cos(odeSolver.psi_history[i] * np.pi / 180)
+        thrust_angle_vector_y = np.sin(odeSolver.psi_history[i] * np.pi / 180)
+        flight_arrow.set_offsets((x_pos, y_pos))
+        flight_arrow.set_UVC(flight_angle_vector_x, flight_angle_vector_y)
+        thrust_arrow.set_offsets((x_pos, y_pos))
+        thrust_arrow.set_UVC(-thrust_angle_vector_x, -thrust_angle_vector_y)
+        return flight_arrow, thrust_arrow
+
+    # Call update_quiver function inside the loop
+    ani = FuncAnimation(fig, update, frames=len(odeSolver.t_history) // 500, repeat=True) # interval?
     
-    # # Set axes labels and title
-    # ax.set_xlabel('Downrange Position (km)')
-    # ax.set_ylabel('Height (km)')
-    # ax.set_title('2D Position')
-    # ax.grid(True)
-    # ax.legend()
-    # ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
-    # ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
-    # ani.save('data/output/combined_trajectory.gif', writer='pillow')
+    # Set axes labels and title
+    ax.set_xlabel('Downrange Position (km)')
+    ax.set_ylabel('Height (km)')
+    ax.set_title('2D Position')
+    ax.grid(True)
+    ax.legend()
+    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
+    ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
+    ani.save('data/output/combined_trajectory.gif', writer='pillow')
 
     # Return
-    return last_index_positive
+    return 0
 
 def biased_attr_kp():
     return random.randint(0, 100) 
@@ -357,39 +364,36 @@ def evalOneMax(individual):
         odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
 
         # Create individual plots for each trajectory
-        last_index_positive = plot_individual_trajectory(odeSolver)
-
-        # Status
-        print(f"Run Complete for: Kp={pidController.Kp}, Ki={pidController.Ki}, Kd={pidController.Kd}")
+        odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
 
         # Return
         return (odeSolver.x_history[last_index_positive],)  # Must intentionally return as a tuple
 
-#--------------------------------------------------
-# GA Setup
-#--------------------------------------------------
-# Create objects
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-creator.create("Individual", array.array, typecode='b', fitness=creator.FitnessMax)
+def run_genetic_algo():
 
-# Toolboxes
-toolbox = base.Toolbox()
-# Attribute generator
-toolbox.register("attr_kp", biased_attr_kp)
-toolbox.register("attr_ki", biased_attr_ki)
-toolbox.register("attr_kd", biased_attr_kd)
+    #--------------------------------------------------
+    # GA Setup
+    #--------------------------------------------------
+    # Create objects
+    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("Individual", array.array, typecode='b', fitness=creator.FitnessMax)
 
-# Structure initializers
-toolbox.register("individual", tools.initCycle, creator.Individual,(toolbox.attr_kp, toolbox.attr_ki, toolbox.attr_kd), n=1)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    # Toolboxes
+    toolbox = base.Toolbox()
+    # Attribute generator
+    toolbox.register("attr_kp", biased_attr_kp)
+    toolbox.register("attr_ki", biased_attr_ki)
+    toolbox.register("attr_kd", biased_attr_kd)
 
-# Set up options
-toolbox.register("evaluate", evalOneMax)
-toolbox.register("mate", tools.cxTwoPoint)
-toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
-toolbox.register("select", tools.selTournament, tournsize=3)
+    # Structure initializers
+    toolbox.register("individual", tools.initCycle, creator.Individual,(toolbox.attr_kp, toolbox.attr_ki, toolbox.attr_kd), n=1)
+    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-def main():
+    # Set up options
+    toolbox.register("evaluate", evalOneMax)
+    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+    toolbox.register("select", tools.selTournament, tournsize=3)
 
     # Apply randomness
     random.seed(64)
@@ -418,21 +422,23 @@ def main():
     # Return
     return pop, log, hof
 
-
 if __name__ == '__main__':
 
+    # Number of processes to use
+    num_processes = multiprocessing.cpu_count()  # Use all available CPUs
+
     # Input
-    ENABLE_GENETIC_ALGO = True
+    ENABLE_GENETIC_ALGO = False
 
     # Load in input data
     rocket_params, initial_conditions = load_input_data()
 
     if ENABLE_GENETIC_ALGO:
-        #---------------------------------GA---------------------------------------------
+
         # Calling genetic algo
-        pop, log, hof = main()
+        pop, log, hof = run_genetic_algo()
         
-        # Prints
+        # Print information about GA
         for generation in range(0,len(log)):
             print("Generation: ", generation+1)
             for individual in range(0,len(log[generation]["genes"])):
@@ -467,6 +473,7 @@ if __name__ == '__main__':
 
         # Generate the animation
         ani = animation.FuncAnimation(fig, update_plot, frames=len(log), interval=1000)
+
         # Save the animation as a GIF
         ani.save('data/output/generational_gains_animation.gif', writer='pillow', fps=1)
 
@@ -477,8 +484,13 @@ if __name__ == '__main__':
         max_height_list = []
 
         # PID
-        #gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
-        gain_list = [[51,88,99]]
+        gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
+        #gain_list = [[51,88,99]]
+        
+
+        # Start timing the original version
+        start_time = time.time()
+
         for gains in gain_list:
 
             # Create controller object
@@ -488,7 +500,8 @@ if __name__ == '__main__':
             odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
 
             # Create individual plots for each trajectory
-            last_index_positive = plot_individual_trajectory(odeSolver)
+            odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
+            plot_individual_trajectory(odeSolver, last_index_positive)
 
             # Status
             print(f"Run Complete for: Kp={pidController.Kp}, Ki={pidController.Ki}, Kd={pidController.Kd}")
@@ -500,6 +513,11 @@ if __name__ == '__main__':
             # Create lists
             max_down_range_list.append(values['x'][last_index_positive])
             max_height_list.append(max(values['h'][0:last_index_positive]))
+
+        # End timing the original version
+        end_time = time.time()
+        original_duration = end_time - start_time
+        print(f"Original version duration: {original_duration:.2f} seconds")
 
         # Plot
         fig, ax = plt.subplots(figsize=(10, 8))

@@ -1,0 +1,5 @@
+- Save each individual plot to a specific folder with its gains
+- Repeat time experiments to measure old way
+- Add in multiprocessing, repeat time experiments to see how much faster it was
+- Try to multi process the GA
+- Make it so the GA also plots the best of the generations
