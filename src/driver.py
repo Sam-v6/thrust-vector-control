@@ -1,21 +1,29 @@
-# Pkg imports
+"""
+Purpose: Main driver for thrust vector control of rocket's descent stage
+Author: Syam Evani, Summer 2024
+"""
+
+# Standard library imports
+import sys
+import shutil
+import os
+import random
+import array
+import copy
+import multiprocessing
+import time
+
+# Additional library imports
 import numpy as np
 from scipy import integrate
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib import animation
-import sys
-import os
-import random
 import matplotlib.patches as mpatches
-import array
-import copy
 from deap import algorithms
 from deap import base
 from deap import creator
 from deap import tools
-import multiprocessing
-import time
 
 # Local imports
 from controller import Controller
@@ -70,6 +78,16 @@ def post_process_individual_trajectory(odeSolver):
     return odeSolver, last_index_positive
 
 def plot_individual_trajectory(odeSolver, last_index_positive):
+
+    #------------------------------------------------
+    # Create directories
+    #------------------------------------------------
+    new_folder = f"{odeSolver.controller.Kp}_{odeSolver.controller.Ki}_{odeSolver.controller.Kd}"
+    new_dir_path = os.path.join(os.environ.get('USERPROFILE'), 'repos', 'thrust-vector-control', 'data', 'output', new_folder)
+    os.makedirs(new_dir_path, exist_ok=True)
+
+    # Close all plots
+    plt.close('all')
 
     #------------------------------------------------
     # Plotter implementation
@@ -164,7 +182,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     }
 
     # Create a Plotter instance with a single plot configuration
-    combinedPlots = Plotter("data/output/plotter_combined_plots.png", 
+    combinedPlots = Plotter(os.path.join(new_dir_path,"plotter_combined_plots.png"), 
                                     phase_plot,
                                     height_plot, 
                                     downrange_plot, 
@@ -274,8 +292,9 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     axs[2,2].set_xlim(0, odeSolver.t_history[last_index_positive])
 
     plt.tight_layout()
-    plt.savefig('data/output/combined_plots.png')
-    plt.close()
+    plt.savefig(os.path.join(new_dir_path,'combined_plots.png'))
+    plt.cla()
+    plt.close(fig)
 
     #------------------------------------------------
     # Trajectory Plot
@@ -299,7 +318,8 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
 
     # Save the plot
-    plt.savefig('data/output/combined_trajectory.png')
+    plt.savefig(os.path.join(new_dir_path,'combined_trajectory.png'))
+    plt.close(fig)
 
     #------------------------------------------------
     # Trajectory Animation
@@ -337,10 +357,15 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     ax.legend()
     ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
-    ani.save('data/output/combined_trajectory.gif', writer='pillow')
+    ani.save(os.path.join(new_dir_path,'combined_trajectory.gif'), writer='pillow')
 
     # Return
     return 0
+
+def process_gains(gains, rocket_params, initial_conditions):
+
+    
+
 
 def biased_attr_kp():
     return random.randint(0, 100) 
@@ -365,6 +390,7 @@ def evalOneMax(individual):
 
         # Create individual plots for each trajectory
         odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
+        plot_individual_trajectory(odeSolver, last_index_positive)
 
         # Return
         return (odeSolver.x_history[last_index_positive],)  # Must intentionally return as a tuple
@@ -424,15 +450,38 @@ def run_genetic_algo():
 
 if __name__ == '__main__':
 
-    # Number of processes to use
-    num_processes = multiprocessing.cpu_count()  # Use all available CPUs
+    #--------------------------------------------------
+    # Start timer and set inputs
+    #--------------------------------------------------
+    # Start timing the original version
+    start_time = time.time()
 
     # Input
     ENABLE_GENETIC_ALGO = False
 
+    #--------------------------------------------------
+    # Set up multiprocessing
+    #--------------------------------------------------
+    # Number of processes to use
+    num_processes = multiprocessing.cpu_count()  # Use all available CPUs
+
+    #--------------------------------------------------
+    # Perform housekeeping and load in data
+    #--------------------------------------------------
+    # Clean up everything below /data/output/
+    output_path = os.path.join(os.environ.get('USERPROFILE'), 'repos', 'thrust-vector-control', 'data', 'output')
+    if os.path.exists(output_path):
+        shutil.rmtree(output_path)
+
+        # Recreate the directory
+        os.makedirs(output_path)
+
     # Load in input data
     rocket_params, initial_conditions = load_input_data()
 
+    #--------------------------------------------------
+    # Run genetic algo if enabled
+    #--------------------------------------------------
     if ENABLE_GENETIC_ALGO:
 
         # Calling genetic algo
@@ -475,8 +524,11 @@ if __name__ == '__main__':
         ani = animation.FuncAnimation(fig, update_plot, frames=len(log), interval=1000)
 
         # Save the animation as a GIF
-        ani.save('data/output/generational_gains_animation.gif', writer='pillow', fps=1)
+        ani.save(os.path.join(os.environ.get('USERPROFILE'), 'repos', 'thrust-vector-control', 'data', 'output', 'generational_gains_animation.gif'), writer='pillow', fps=1)
 
+    #--------------------------------------------------
+    # Run manual gains
+    #--------------------------------------------------
     else:
         # Init
         values_list = []
@@ -486,11 +538,6 @@ if __name__ == '__main__':
         # PID
         gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
         #gain_list = [[51,88,99]]
-        
-
-        # Start timing the original version
-        start_time = time.time()
-
         for gains in gain_list:
 
             # Create controller object
@@ -514,11 +561,6 @@ if __name__ == '__main__':
             max_down_range_list.append(values['x'][last_index_positive])
             max_height_list.append(max(values['h'][0:last_index_positive]))
 
-        # End timing the original version
-        end_time = time.time()
-        original_duration = end_time - start_time
-        print(f"Original version duration: {original_duration:.2f} seconds")
-
         # Plot
         fig, ax = plt.subplots(figsize=(10, 8))
         generation = 1
@@ -532,7 +574,14 @@ if __name__ == '__main__':
         ax.legend()
         ax.set_xlim(0, max(max_down_range_list))
         ax.set_ylim(0, max(max_height_list)*1.1)
-        plt.savefig('data/output/dispersed_trajectories.png')
+        plt.savefig(os.path.join(os.environ.get('USERPROFILE'), 'repos', 'thrust-vector-control', 'data', 'output', 'dispersed_trajectories.png'))
+        plt.close(fig)
+
+    # End timing the original version
+    end_time = time.time()
+    duration = end_time - start_time
+    print(f"Duration: {duration:.2f} seconds")
+
 
 
 
