@@ -364,8 +364,27 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
 
 def process_gains(gains, rocket_params, initial_conditions):
 
-    
+    # Create controller object
+    pidController = Controller(gains[0], gains[1], gains[2], rocket_params["DESIRED_FLIGHT_ANGLE"], rocket_params["TVC_BOUNDS"])
 
+    # Generate individual trajectory
+    odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
+
+    # Create individual plots for each trajectory
+    odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
+    plot_individual_trajectory(odeSolver, last_index_positive)
+
+    # Status
+    print(f"Run Complete for: Kp={pidController.Kp}, Ki={pidController.Ki}, Kd={pidController.Kd}")
+
+    # Store values into a dictionary
+    values = {"x": odeSolver.x_history, "h": odeSolver.h_history}
+
+    # Create lists
+    max_down_range = values['x'][last_index_positive]
+    max_height = max(values['h'][0:last_index_positive])
+
+    return values, max_down_range, max_height
 
 def biased_attr_kp():
     return random.randint(0, 100) 
@@ -458,13 +477,7 @@ if __name__ == '__main__':
 
     # Input
     ENABLE_GENETIC_ALGO = False
-
-    #--------------------------------------------------
-    # Set up multiprocessing
-    #--------------------------------------------------
-    # Number of processes to use
-    num_processes = multiprocessing.cpu_count()  # Use all available CPUs
-
+    CORE_COUNT = 24
     #--------------------------------------------------
     # Perform housekeeping and load in data
     #--------------------------------------------------
@@ -537,29 +550,17 @@ if __name__ == '__main__':
 
         # PID
         gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
-        #gain_list = [[51,88,99]]
-        for gains in gain_list:
+        
+        # Create a Pool of workers
+        with multiprocessing.Pool(processes=CORE_COUNT) as pool:
+            # Map the process_gains function to the list of gains
+            results = pool.starmap(process_gains, [(gains, rocket_params, initial_conditions) for gains in gain_list])
 
-            # Create controller object
-            pidController = Controller(gains[0], gains[1], gains[2], rocket_params["DESIRED_FLIGHT_ANGLE"], rocket_params["TVC_BOUNDS"])
-
-            # Generate individual trajectory
-            odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
-
-            # Create individual plots for each trajectory
-            odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
-            plot_individual_trajectory(odeSolver, last_index_positive)
-
-            # Status
-            print(f"Run Complete for: Kp={pidController.Kp}, Ki={pidController.Ki}, Kd={pidController.Kd}")
-
-            # Store values into a dictionary
-            values = {"x": odeSolver.x_history, "h": odeSolver.h_history}
-            values_list.append(values.copy())
-
-            # Create lists
-            max_down_range_list.append(values['x'][last_index_positive])
-            max_height_list.append(max(values['h'][0:last_index_positive]))
+        # Unpack results
+        for values, max_down_range, max_height in results:
+            values_list.append(values)
+            max_down_range_list.append(max_down_range)
+            max_height_list.append(max_height)
 
         # Plot
         fig, ax = plt.subplots(figsize=(10, 8))
