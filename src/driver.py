@@ -478,6 +478,7 @@ if __name__ == '__main__':
     # Input
     ENABLE_GENETIC_ALGO = False
     CORE_COUNT = 24
+    
     #--------------------------------------------------
     # Perform housekeeping and load in data
     #--------------------------------------------------
