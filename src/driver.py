@@ -12,6 +12,7 @@ import array
 import copy
 import multiprocessing
 import time
+from functools import partial
 
 # Additional library imports
 import numpy as np
@@ -399,52 +400,57 @@ def biased_attr_ki():
 def biased_attr_kd():
     return random.randint(0, 100)  
 
-def evalOneMax(individual):
+def evalOneMax(individual, rocket_params, initial_conditions):
+    # Create controller object
+    pidController = Controller(individual[0], individual[1], individual[2], rocket_params["DESIRED_FLIGHT_ANGLE"], rocket_params["TVC_BOUNDS"])
 
-        # Create controller object
-        pidController = Controller(individual[0], individual[1], individual[2], rocket_params["DESIRED_FLIGHT_ANGLE"], rocket_params["TVC_BOUNDS"])
+    # Generate individual trajectory
+    odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
 
-        # Generate individual trajectory
-        odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
+    # Create individual plots for each trajectory
+    odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
+    plot_individual_trajectory(odeSolver, last_index_positive)
 
-        # Create individual plots for each trajectory
-        odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
-        plot_individual_trajectory(odeSolver, last_index_positive)
+    # Return
+    return (odeSolver.x_history[last_index_positive],)  # Must intentionally return as a tuple
 
-        # Return
-        return (odeSolver.x_history[last_index_positive],)  # Must intentionally return as a tuple
+class Evaluator:
+    def __init__(self, rocket_params, initial_conditions):
+        self.rocket_params = rocket_params
+        self.initial_conditions = initial_conditions
 
-def run_genetic_algo():
+    def __call__(self, individual):
+        return evalOneMax(individual, self.rocket_params, self.initial_conditions)
 
-    #--------------------------------------------------
-    # GA Setup
-    #--------------------------------------------------
+def run_genetic_algo(rocket_params, initial_conditions, CORE_COUNT):
+    # Multiprocessing pool
+    pool = multiprocessing.Pool(CORE_COUNT)
+
     # Create objects
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     creator.create("Individual", array.array, typecode='b', fitness=creator.FitnessMax)
 
     # Toolboxes
     toolbox = base.Toolbox()
-    # Attribute generator
     toolbox.register("attr_kp", biased_attr_kp)
     toolbox.register("attr_ki", biased_attr_ki)
     toolbox.register("attr_kd", biased_attr_kd)
-
-    # Structure initializers
-    toolbox.register("individual", tools.initCycle, creator.Individual,(toolbox.attr_kp, toolbox.attr_ki, toolbox.attr_kd), n=1)
+    toolbox.register("individual", tools.initCycle, creator.Individual, (toolbox.attr_kp, toolbox.attr_ki, toolbox.attr_kd), n=1)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-    # Set up options
-    toolbox.register("evaluate", evalOneMax)
+    # Initialize evaluator
+    evaluator = Evaluator(rocket_params, initial_conditions)
+    toolbox.register("evaluate", evaluator)
     toolbox.register("mate", tools.cxTwoPoint)
     toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
-    # Apply randomness
-    random.seed(64)
+    # Use the pool's map method
+    toolbox.register("map", pool.map)
 
-    # Starting population size
-    pop = toolbox.population(n=10)                                                  # Initial pop size
+    # Setup
+    random.seed(64)
+    pop = toolbox.population(n=10)  # Initial pop size
 
     # Setting algo and stats
     hof = tools.HallOfFame(1)
@@ -455,14 +461,18 @@ def run_genetic_algo():
     stats.register("max", np.max)
     stats.register("fitness", lambda pop: [ind for ind in pop])
     stats.register("genes", lambda genes: [ind for ind in pop])
-    
+
     # Calling the algo
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.6, ngen=5,       # Generations
+    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.5, mutpb=0.6, ngen=5,  # Generations
                                    stats=stats, halloffame=hof, verbose=True)
 
     # Print the best one
     best_ind = tools.selBest(pop, 1)[0]
     print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
+
+    # Close the pool
+    pool.close()
+    pool.join()
 
     # Return
     return pop, log, hof
@@ -476,9 +486,9 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # Input
-    ENABLE_GENETIC_ALGO = False
-    CORE_COUNT = 24
-    
+    ENABLE_GENETIC_ALGO = True
+    CORE_COUNT = 16
+
     #--------------------------------------------------
     # Perform housekeeping and load in data
     #--------------------------------------------------
@@ -499,7 +509,7 @@ if __name__ == '__main__':
     if ENABLE_GENETIC_ALGO:
 
         # Calling genetic algo
-        pop, log, hof = run_genetic_algo()
+        pop, log, hof = run_genetic_algo(rocket_params, initial_conditions, CORE_COUNT)
         
         # Print information about GA
         for generation in range(0,len(log)):
