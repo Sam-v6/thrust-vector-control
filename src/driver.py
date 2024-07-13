@@ -468,14 +468,13 @@ def run_genetic_algo(rocket_params, initial_conditions, CORE_COUNT):
 
     # Print the best one
     best_ind = tools.selBest(pop, 1)[0]
-    print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
 
     # Close the pool
     pool.close()
     pool.join()
 
     # Return
-    return pop, log, hof
+    return pop, log, hof, best_ind
 
 if __name__ == '__main__':
 
@@ -486,7 +485,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # Input
-    ENABLE_GENETIC_ALGO = True
+    ENABLE_GENETIC_ALGO = False
     CORE_COUNT = 16
 
     #--------------------------------------------------
@@ -509,13 +508,16 @@ if __name__ == '__main__':
     if ENABLE_GENETIC_ALGO:
 
         # Calling genetic algo
-        pop, log, hof = run_genetic_algo(rocket_params, initial_conditions, CORE_COUNT)
+        pop, log, hof, best_ind = run_genetic_algo(rocket_params, initial_conditions, CORE_COUNT)
         
         # Print information about GA
         for generation in range(0,len(log)):
             print("Generation: ", generation+1)
             for individual in range(0,len(log[generation]["genes"])):
                 print("Individual:", individual+1, "Fitness:", log[generation]["fitness"][individual][0], "Values:", log[generation]["genes"][individual][0],log[generation]["genes"][individual][1],log[generation]["genes"][individual][2])
+
+        # Print best individual
+        print("Best individual is %s, %s" % (best_ind, best_ind.fitness.values))
 
         # Function to update the plot
         def update_plot(frame):
