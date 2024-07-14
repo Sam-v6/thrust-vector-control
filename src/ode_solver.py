@@ -148,14 +148,14 @@ class OdeSolver:
             self.x_dot = self.v*np.cos(self.theta)
 
         # Descent burn
-        elif self.hmax_flag and self.mp_descent > 0 and self.hmax - self.h >= 10e3:
+        elif self.hmax_flag and self.mp_descent > 0:
 
             # Phase
             self.phase = 4
             LIFT_CF = 0
             
             # Determine TVC correction
-            self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
+            # self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
 
             # Set times
             self.descent_t = self.descent_t + self.dt
@@ -163,13 +163,11 @@ class OdeSolver:
             # Thrust and mass
             self.mp_descent = self.mp_descent - (self.rocket_params["MDOT_DESCENT"] *  self.dt)
             self.m = self.rocket_params["MASS_INIT"] - (self.rocket_params["MDOT_ASCENT"] * self.rocket_params["TIME_ASCENT_BURN"]) - (self.rocket_params["MDOT_DESCENT"] * self.descent_t) - self.rocket_params["MASS_PAYLOAD"]
-            F_v = 0
-            F_theta = self.rocket_params["THRUST_DESCENT"]
-            self.F = F_theta
+            self.F =self.rocket_params["THRUST_DESCENT"]
 
             # EOMS
-            self.v_dot = (F_v*np.cos(self.psi-self.theta))/self.m - (self.rocket_params["DRAG_CF"]*self.rho*self.v**2*self.rocket_params["PROFILE_AREA"])/(2*self.m) - self.g*np.sin(self.theta)
-            self.theta_dot = ((F_theta*np.sin(self.psi-self.theta))/(self.m*self.v) + (LIFT_CF*self.rho*self.v*self.rocket_params["PROFILE_AREA"])/(2*self.m) - (self.g*np.cos(self.theta))/self.v)
+            self.v_dot = (self.F*np.cos(self.psi-self.theta))/self.m - (self.rocket_params["DRAG_CF"]*self.rho*self.v**2*self.rocket_params["PROFILE_AREA"])/(2*self.m) - self.g*np.sin(self.theta)
+            self.theta_dot = (self.F*np.sin(self.psi-self.theta))/(self.m*self.v) + (LIFT_CF*self.rho*self.v*self.rocket_params["PROFILE_AREA"])/(2*self.m) - (self.g*np.cos(self.theta))/self.v
             self.h_dot = self.v*np.sin(self.theta)
             self.x_dot = self.v*np.cos(self.theta)
 
@@ -195,7 +193,7 @@ class OdeSolver:
             self.x_dot = self.v*np.cos(self.theta)
 
         # Determine if we have reached maximum height
-        if (self.h - self.prior_h) < -10 and self.hmax_flag == False:
+        if (self.h - self.prior_h) < -1 and self.hmax_flag == False:
             self.hmax_flag = True 
             self.hmax = self.prior_h
 

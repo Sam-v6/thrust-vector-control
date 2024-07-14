@@ -20,6 +20,7 @@ from scipy import integrate
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib import animation
+from matplotlib.ticker import AutoMinorLocator
 import matplotlib.patches as mpatches
 from deap import algorithms
 from deap import base
@@ -300,21 +301,43 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     #------------------------------------------------
     # Trajectory Plot
     #------------------------------------------------
+    # Find the indexes where the phase changes
+    phase_history = odeSolver.phase_history
+    change_indexes = [i for i in range(1, len(phase_history)) if phase_history[i] != phase_history[i-1]]
+
     # Create a figure and axes
     fig, ax = plt.subplots(figsize=(10,8))
     ax.plot(odeSolver.x_history, odeSolver.h_history, color='gray', linestyle="--")
+
+    # Add vertical lines at phase change points
+    for index in change_indexes:
+        ax.axvline(x=odeSolver.x_history[index], color='black', linestyle=':')
+
     for i in range(0, len(odeSolver.t_history), 500):
-        flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
-        flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
-        thrust_angle_vector_x = np.cos(odeSolver.psi_history[i] * np.pi / 180)
-        thrust_angle_vector_y = np.sin(odeSolver.psi_history[i] * np.pi / 180)
-        ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=25, color='r', label='Body Vector')
-        ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], -thrust_angle_vector_x, -thrust_angle_vector_y, scale=35, color='b', label='Thrust Vector')
+            
+            # Flight
+            flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
+            flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
+            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=35, color='b', label='Flight Direction')    
+
+            # Thrust
+            thrust_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
+            thrust_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
+            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], thrust_angle_vector_x, thrust_angle_vector_y, scale=35, color='r', label='Plume')
+        
     ax.set_xlabel('Downrange Position (km)')
     ax.set_ylabel('Height (km)')
     ax.set_title('2D Position')
-    ax.grid(True)
     ax.legend(handles=ax.get_legend_handles_labels()[0][:2], labels=ax.get_legend_handles_labels()[1][:2])          # This takes only the first two entries of the legend because it repeats
+    
+    # Add major and minor grid lines
+    ax.grid(True, which='both')
+    ax.grid(which='major', linestyle='-', linewidth='0.4', color='gray')
+    ax.grid(which='minor', linestyle=':', linewidth='0.4', color='gray')
+    
+    # Increase minor ticks for a cleaner grid appearance
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
     ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
 
@@ -325,27 +348,39 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     #------------------------------------------------
     # Trajectory Animation
     #------------------------------------------------
+    # Create phase map
+    phase_map = {1: "Ascent",
+                 2: "Ascent with Gravity Turn",
+                 3: "Coast",
+                 4: "Descent",
+                 5: "Free Fall"}
+
     # Create a figure and axes
     fig, ax = plt.subplots(figsize=(10, 8))
 
     # Create quiver plots outside the loop
-    flight_arrow = ax.quiver([], [], [], [], scale=25, color='r', label='Body Vector')
     thrust_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Thrust Vector')
+
+    # Create a text object for displaying phase with a background color
+    phase_text = ax.text(0.05, 0.95, '', transform=ax.transAxes, fontsize=12, verticalalignment='top',
+                        bbox=dict(facecolor='lightblue', alpha=1.0, edgecolor='black'))
 
     # Function to update the plot for each frame of animation
     def update(frame):
         i = frame * 500
         x_pos = odeSolver.x_history[i]
         y_pos = odeSolver.h_history[i]
-        flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
-        flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
-        thrust_angle_vector_x = np.cos(odeSolver.psi_history[i] * np.pi / 180)
-        thrust_angle_vector_y = np.sin(odeSolver.psi_history[i] * np.pi / 180)
-        flight_arrow.set_offsets((x_pos, y_pos))
-        flight_arrow.set_UVC(flight_angle_vector_x, flight_angle_vector_y)
+        thrust_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
+        thrust_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
         thrust_arrow.set_offsets((x_pos, y_pos))
-        thrust_arrow.set_UVC(-thrust_angle_vector_x, -thrust_angle_vector_y)
-        return flight_arrow, thrust_arrow
+        thrust_arrow.set_UVC(thrust_angle_vector_x, thrust_angle_vector_y)
+
+        # Update the phase text
+        phase = phase_map[odeSolver.phase_history[i]]
+        phase_text.set_text(f'Phase: {phase}')
+
+        # Return
+        return thrust_arrow, phase_text
 
     # Call update_quiver function inside the loop
     ani = FuncAnimation(fig, update, frames=len(odeSolver.t_history) // 500, repeat=True) # interval?
@@ -354,10 +389,20 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     ax.set_xlabel('Downrange Position (km)')
     ax.set_ylabel('Height (km)')
     ax.set_title('2D Position')
-    ax.grid(True)
     ax.legend()
+
+    # Add major and minor grid lines
+    ax.grid(True, which='both')
+    ax.grid(which='major', linestyle='-', linewidth='0.4', color='gray')
+    ax.grid(which='minor', linestyle=':', linewidth='0.4', color='gray')
+    
+    # Increase minor ticks for a cleaner grid appearance
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
     ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
+
+    # Save
     ani.save(os.path.join(new_dir_path,'combined_trajectory.gif'), writer='pillow')
 
     # Return
@@ -562,7 +607,8 @@ if __name__ == '__main__':
         max_height_list = []
 
         # PID
-        gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
+        #gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
+        gain_list = [[97, 0, 3]]
         
         # Create a Pool of workers
         with multiprocessing.Pool(processes=CORE_COUNT) as pool:
