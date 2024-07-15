@@ -33,9 +33,23 @@ def load_input_data():
     # Return
     return rocket_params, initial_conditions 
 
-def normalize_radians(angle):
-    while angle < -math.pi:
-        angle += 2 * math.pi
-    while angle >= math.pi:
-        angle -= 2 * math.pi
-    return angle
+# def normalize_radians(angle):
+#     while angle < -math.pi:
+#         angle += 2 * math.pi
+#     while angle >= math.pi:
+#         angle -= 2 * math.pi
+#     return angle
+
+def normalize_radians(radians):
+    return radians % (2 * math.pi)
+
+def convert_to_normalized_radians(angle):
+    radians = np.radians(angle)
+    return normalize_radians(radians)
+
+def convert_to_normalized_degrees(radians):
+    # Convert radians to degrees
+    degrees = np.degrees(radians) % 360
+    # Normalize to the range -180 to 180
+    signed_degrees = ((degrees + 180) % 360) - 180
+    return signed_degrees

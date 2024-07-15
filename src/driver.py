@@ -30,7 +30,7 @@ from deap import tools
 # Local imports
 from controller import Controller
 from ode_solver import OdeSolver
-from util import load_input_data
+from util import load_input_data, convert_to_normalized_degrees
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from lib.plotter.plotter import Plotter
 
@@ -57,16 +57,12 @@ def post_process_individual_trajectory(odeSolver):
     #------------------------------------------------
     # Post Processing
     #------------------------------------------------
-    # Convert to degrees
-    odeSolver.psi_history = np.degrees(odeSolver.psi_history)
-    odeSolver.theta_error_history = np.degrees(odeSolver.theta_error_history)
-    odeSolver.theta_history = np.degrees(odeSolver.theta_history)
 
     # Convert to km/s, km, and Metric Tons, and kN
     for i in range(0,len(odeSolver.t_history)):
         odeSolver.x_history[i] = odeSolver.x_history[i]/1e3                       # [km]
         odeSolver.h_history[i] = odeSolver.h_history[i]/1e3                       # [km]
-        odeSolver.v_history[i] =odeSolver.v_history[i]/1e3                        # [km/s]
+        odeSolver.v_history[i] = odeSolver.v_history[i]/1e3                       # [km/s]
         odeSolver.F_history[i] = odeSolver.F_history[i]/1e3                       # [kN]
         odeSolver.m_history[i] = odeSolver.m_history[i]/1e3                       # [MT]
         odeSolver.mp_descent_history[i] = odeSolver.mp_descent_history[i]/1e3     # [MT]
@@ -320,7 +316,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
             flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
             ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=35, color='b', label='Flight Direction')    
 
-            # Thrust
+            # Plume
             thrust_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
             thrust_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
             ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], thrust_angle_vector_x, thrust_angle_vector_y, scale=35, color='r', label='Plume')
@@ -338,7 +334,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     # Increase minor ticks for a cleaner grid appearance
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
+    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive])*1.5)
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
 
     # Save the plot
@@ -399,7 +395,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     # Increase minor ticks for a cleaner grid appearance
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive]))
+    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive])*1.5)
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
 
     # Save

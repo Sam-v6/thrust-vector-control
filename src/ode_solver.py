@@ -3,6 +3,8 @@ import numpy as np
 
 # Local imports
 from util import normalize_radians
+from util import convert_to_normalized_degrees
+from util import convert_to_normalized_radians
 from environment import determine_density
 
 class OdeSolver:
@@ -63,10 +65,10 @@ class OdeSolver:
     def calculate_trajectory(self, t, y):
 
         # Set parameters of interest
-        self.v = y[0]
-        self.theta = y[1]
-        self.h = y[2]
-        self.x = y[3]
+        self.v = y[0]                   # [m/s]
+        self.theta = y[1]               # [rad]
+        self.h = y[2]                   # [m]
+        self.x = y[3]                   # [m]
         
         # Determine density and gravity as a fcn of height
         if self.h > 0:
@@ -77,10 +79,12 @@ class OdeSolver:
             self.g = self.prior_g
 
         # Determine dt
-        self.dt = t - self.prior_t
+        self.dt = t - self.prior_t      # [s]
 
-        # Normalize self.theta
+        # Normalize angles
         self.theta = normalize_radians(self.theta)
+        self.psi = normalize_radians(self.psi)
+        self.theta_error = normalize_radians(self.theta_error)
 
         # Ascent: before gravity turn
         if self.h <= self.rocket_params["HEIGHT_TURN"] and t<=self.rocket_params["TIME_ASCENT_BURN"]:
@@ -134,7 +138,7 @@ class OdeSolver:
             LIFT_CF = 0
 
             # Determine TVC correction
-            self.psi, self.theta_error =self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
+            self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
             self.psi = self.theta
 
             # Thrust and mass
@@ -155,7 +159,7 @@ class OdeSolver:
             LIFT_CF = 0
             
             # Determine TVC correction
-            # self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
+            self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
 
             # Set times
             self.descent_t = self.descent_t + self.dt
@@ -194,8 +198,9 @@ class OdeSolver:
 
         # Determine if we have reached maximum height
         if (self.h - self.prior_h) < -1 and self.hmax_flag == False:
-            self.hmax_flag = True 
-            self.hmax = self.prior_h
+            self.hmax_flag = True
+            self.psi = convert_to_normalized_radians(np.degrees(normalize_radians(self.theta)) + 180)      # Make sure theta is normalized, convert to degrees, then add 180 to make sure thrust is now opposite of flight direction (retro prop for falling)
+
 
         # Save values
         self.t_history.append(t)
@@ -203,9 +208,9 @@ class OdeSolver:
         self.m_history.append(self.m)
         self.mp_ascent_history.append(self.mp_ascent)
         self.mp_descent_history.append(self.mp_descent)
-        self.psi_history.append(self.psi)
-        self.theta_error_history.append(self.theta_error)
-        self.theta_history.append(self.theta)
+        self.psi_history.append(convert_to_normalized_degrees(self.psi))
+        self.theta_error_history.append(convert_to_normalized_degrees(self.theta_error))
+        self.theta_history.append(convert_to_normalized_degrees(self.theta))
         self.v_history.append(self.v)
         self.h_history.append(self.h)
         self.x_history.append(self.x)
