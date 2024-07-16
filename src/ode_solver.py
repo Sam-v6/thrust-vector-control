@@ -62,6 +62,10 @@ class OdeSolver:
         self.phase_history = []
         self.g_history = []
 
+        # Future post process values
+        self.controller_upper_bound = []
+        self.controller_lower_bound = []
+
     def calculate_trajectory(self, t, y):
 
         # Set parameters of interest
@@ -160,6 +164,7 @@ class OdeSolver:
             
             # Determine TVC correction
             self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
+            #self.psi = self.theta
 
             # Set times
             self.descent_t = self.descent_t + self.dt
@@ -200,7 +205,6 @@ class OdeSolver:
         if (self.h - self.prior_h) < -1 and self.hmax_flag == False:
             self.hmax_flag = True
             self.psi = convert_to_normalized_radians(np.degrees(normalize_radians(self.theta)) + 180)      # Make sure theta is normalized, convert to degrees, then add 180 to make sure thrust is now opposite of flight direction (retro prop for falling)
-
 
         # Save values
         self.t_history.append(t)

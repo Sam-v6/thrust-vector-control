@@ -31,7 +31,7 @@ class Controller:
             psi_correction = psi_correction_prior
             error = error_prior
         else:
-            error = self.setpoint - theta
+            error = (self.setpoint - theta) % 360
             self.integral = self.integral + (error * dt)
             derivative = (error - self.prev_error)/dt
             psi_correction = (self.Kp * error + self.Ki * self.integral + self.Kd * derivative) % 360
@@ -47,7 +47,7 @@ class Controller:
 
             # Psi is the the thrust vector, we really want the plume to be pointing this way
             psi_correction = psi_correction % 360
-            #psi_correction = (psi_correction + 180) % 360
+            psi_correction = (psi_correction + 180) % 360
 
             #print(f"Theta: {theta}, Setpoint: {self.setpoint}, Error: {error}, Psi: {psi_correction}")
 

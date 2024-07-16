@@ -51,5 +51,16 @@ def convert_to_normalized_degrees(radians):
     # Convert radians to degrees
     degrees = np.degrees(radians) % 360
     # Normalize to the range -180 to 180
-    signed_degrees = ((degrees + 180) % 360) - 180
-    return signed_degrees
+    #signed_degrees = ((degrees + 180) % 360) - 180
+    return degrees
+
+def flip_angle(degrees):
+    degrees = degrees % 360     # make sure its normalized
+    delta = 180 - abs(degrees)
+
+    # Flip angle if positive (if negative, it will be positive already from above)
+    if degrees > 0:
+        delta = delta * -1
+
+    # Return
+    return delta      

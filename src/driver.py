@@ -9,7 +9,6 @@ import shutil
 import os
 import random
 import array
-import copy
 import multiprocessing
 import time
 from functools import partial
@@ -30,7 +29,7 @@ from deap import tools
 # Local imports
 from controller import Controller
 from ode_solver import OdeSolver
-from util import load_input_data, convert_to_normalized_degrees
+from util import load_input_data, convert_to_normalized_degrees, flip_angle
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from lib.plotter.plotter import Plotter
 
@@ -52,7 +51,7 @@ def generate_individual_trajectory(pidController, rocket_params, initial_conditi
     # Return
     return odeSolver
 
-def post_process_individual_trajectory(odeSolver):
+def post_process_individual_trajectory(odeSolver, bounds):
 
     #------------------------------------------------
     # Post Processing
@@ -68,7 +67,11 @@ def post_process_individual_trajectory(odeSolver):
         odeSolver.mp_descent_history[i] = odeSolver.mp_descent_history[i]/1e3     # [MT]
         odeSolver.mp_ascent_history[i] = odeSolver.mp_ascent_history[i]/1e3       # [MT]
 
-    # Post processing
+        # Create the controller bounds
+        odeSolver.controller_upper_bound.append(odeSolver.theta_history[i] + bounds)
+        odeSolver.controller_lower_bound.append(odeSolver.theta_history[i] - bounds)
+
+    # Post processing the height array
     h_array = np.array(odeSolver.h_history)
     reversed_h_array = h_array[::-1]
     last_index_positive = len(h_array) - np.argmax(reversed_h_array > 0) - 1
@@ -133,7 +136,9 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     flight_angles_plot = {
         'datasets': [{'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_history, 'label': "$\\theta$"},
                      {'x_data': odeSolver.t_history, 'y_data': odeSolver.theta_error_history, 'label': "$\\theta_e$"},
-                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.psi_history, 'label': "$\\psi$"}],
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.psi_history, 'label': "$\\psi$"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.controller_upper_bound, 'label': "Controller Upper Bound", 'color': "red", 'linestyle': "--"},
+                     {'x_data': odeSolver.t_history, 'y_data': odeSolver.controller_lower_bound, 'label': "Controller Lower Bound", 'color': "lightcoral", 'linestyle': "--"}],
         'title': "Flight Angles",
         'xlabel': "Time (s)",
         'ylabel': "Angle (deg)",
@@ -243,6 +248,8 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     axs[1,1].plot(odeSolver.t_history, odeSolver.theta_history, label="$\\theta$")
     axs[1,1].plot(odeSolver.t_history, odeSolver.theta_error_history, label="$\\theta_e$")
     axs[1,1].plot(odeSolver.t_history, odeSolver.psi_history, label="$\\psi$")
+    axs[1,1].plot(odeSolver.t_history, odeSolver.controller_upper_bound, label="Controller Upper Bound", color="red", linestyle="--")
+    axs[1,1].plot(odeSolver.t_history, odeSolver.controller_lower_bound, label="Controller Lower Bound", color="lightcoral", linestyle="--")
     axs[1,1].set_xlabel('Time (s)')
     axs[1,1].set_ylabel('Angle (deg)')
     axs[1,1].set_title('Flight Angles')
@@ -317,9 +324,9 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
             ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=35, color='b', label='Flight Direction')    
 
             # Plume
-            thrust_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
-            thrust_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
-            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], thrust_angle_vector_x, thrust_angle_vector_y, scale=35, color='r', label='Plume')
+            plume_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
+            plume_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
+            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], plume_angle_vector_x, plume_angle_vector_y, scale=35, color='r', label='Plume')
         
     ax.set_xlabel('Downrange Position (km)')
     ax.set_ylabel('Height (km)')
@@ -334,7 +341,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     # Increase minor ticks for a cleaner grid appearance
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive])*1.5)
+    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive])*1.1)
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
 
     # Save the plot
@@ -355,31 +362,35 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     fig, ax = plt.subplots(figsize=(10, 8))
 
     # Create quiver plots outside the loop
-    thrust_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Thrust Vector')
+    plume_arrow = ax.quiver([], [], [], [], scale=35, color='b', label='Plume Vector')
 
     # Create a text object for displaying phase with a background color
     phase_text = ax.text(0.05, 0.95, '', transform=ax.transAxes, fontsize=12, verticalalignment='top',
                         bbox=dict(facecolor='lightblue', alpha=1.0, edgecolor='black'))
 
     # Function to update the plot for each frame of animation
+    scale_multiplier = 250
     def update(frame):
-        i = frame * 500
+        i = frame * scale_multiplier
         x_pos = odeSolver.x_history[i]
         y_pos = odeSolver.h_history[i]
-        thrust_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
-        thrust_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
-        thrust_arrow.set_offsets((x_pos, y_pos))
-        thrust_arrow.set_UVC(thrust_angle_vector_x, thrust_angle_vector_y)
+
+        # Plume
+        plume_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
+        plume_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
+        plume_arrow.set_offsets((x_pos, y_pos))
+
+        plume_arrow.set_UVC(plume_angle_vector_x, plume_angle_vector_y)
 
         # Update the phase text
         phase = phase_map[odeSolver.phase_history[i]]
         phase_text.set_text(f'Phase: {phase}')
 
         # Return
-        return thrust_arrow, phase_text
+        return plume_arrow, phase_text
 
     # Call update_quiver function inside the loop
-    ani = FuncAnimation(fig, update, frames=len(odeSolver.t_history) // 500, repeat=True) # interval?
+    ani = FuncAnimation(fig, update, frames=len(odeSolver.t_history) // scale_multiplier, interval=100, repeat=True) # interval?
     
     # Set axes labels and title
     ax.set_xlabel('Downrange Position (km)')
@@ -395,7 +406,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     # Increase minor ticks for a cleaner grid appearance
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive])*1.5)
+    ax.set_xlim(0, max(odeSolver.x_history[0:last_index_positive])*1.1)
     ax.set_ylim(0, odeSolver.h_history[np.argmax(odeSolver.h_history)]*1.1)
 
     # Save
@@ -413,7 +424,7 @@ def process_gains(gains, rocket_params, initial_conditions):
     odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
 
     # Create individual plots for each trajectory
-    odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
+    odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver, rocket_params["TVC_BOUNDS"])
     plot_individual_trajectory(odeSolver, last_index_positive)
 
     # Status
@@ -454,7 +465,6 @@ def evalOneMax(individual, rocket_params, initial_conditions):
 
     # Return
     return (odeSolver.x_history[last_index_positive],)  # Must intentionally return as a tuple
-
 class Evaluator:
     def __init__(self, rocket_params, initial_conditions):
         self.rocket_params = rocket_params
@@ -527,7 +537,7 @@ if __name__ == '__main__':
 
     # Input
     ENABLE_GENETIC_ALGO = False
-    CORE_COUNT = 16
+    CORE_COUNT = int(multiprocessing.cpu_count()/2)
 
     #--------------------------------------------------
     # Perform housekeeping and load in data
@@ -604,7 +614,7 @@ if __name__ == '__main__':
 
         # PID
         #gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
-        gain_list = [[97, 0, 3]]
+        gain_list = [[22, 0, 0]]
         
         # Create a Pool of workers
         with multiprocessing.Pool(processes=CORE_COUNT) as pool:
