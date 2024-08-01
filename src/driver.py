@@ -219,6 +219,11 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     axs[0,0].grid(True)
     axs[0,0].set_xlim(0, odeSolver.t_history[last_index_positive])
 
+    # Set custom y-ticks and labels
+    axs[0,0].set_yticks(range(1, 6))
+    phase_labels = ['Ascent', 'Gravity Turn', 'Coast', 'Descent Burn', 'Free Fall']
+    axs[0,0].set_yticklabels(phase_labels)
+
     # Plot Height
     fig_num = fig_num + 1
     axs[1,0].plot(odeSolver.t_history, odeSolver.h_history)
@@ -424,7 +429,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
 def process_gains(gains, rocket_params, initial_conditions):
 
     # Create controller object
-    pidController = Controller(gains[0], gains[1], gains[2], rocket_params["DESIRED_THRUST_ANGLE"], rocket_params["TVC_BOUNDS"])
+    pidController = Controller(gains[0], gains[1], gains[2], rocket_params["DESIRED_PLUME_ANGLE"], rocket_params["TVC_BOUNDS"])
 
     # Generate individual trajectory
     odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
@@ -458,9 +463,9 @@ def biased_attr_ki():
 def biased_attr_kd():
     return random.randint(0, 100)  
 
-def evalOneMax(individual, rocket_params, initial_conditions):
+def evalOneMin(individual, rocket_params, initial_conditions):
     # Create controller object
-    pidController = Controller(individual[0], individual[1], individual[2], rocket_params["DESIRED_THRUST_ANGLE"], rocket_params["TVC_BOUNDS"])
+    pidController = Controller(individual[0], individual[1], individual[2], rocket_params["DESIRED_PLUME_ANGLE"], rocket_params["TVC_BOUNDS"])
 
     # Generate individual trajectory
     odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
@@ -470,22 +475,22 @@ def evalOneMax(individual, rocket_params, initial_conditions):
     plot_individual_trajectory(odeSolver, last_index_positive)
 
     # Return
-    return (odeSolver.x_history[last_index_positive],)  # Must intentionally return as a tuple
+    return (odeSolver.v_history[last_index_positive],)  # Must intentionally return as a tuple
 class Evaluator:
     def __init__(self, rocket_params, initial_conditions):
         self.rocket_params = rocket_params
         self.initial_conditions = initial_conditions
 
     def __call__(self, individual):
-        return evalOneMax(individual, self.rocket_params, self.initial_conditions)
+        return evalOneMin(individual, self.rocket_params, self.initial_conditions)
 
 def run_genetic_algo(rocket_params, initial_conditions, CORE_COUNT):
     # Multiprocessing pool
     pool = multiprocessing.Pool(CORE_COUNT)
 
     # Create objects
-    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-    creator.create("Individual", array.array, typecode='b', fitness=creator.FitnessMax)
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+    creator.create("Individual", array.array, typecode='b', fitness=creator.FitnessMin)
 
     # Toolboxes
     toolbox = base.Toolbox()
@@ -620,7 +625,7 @@ if __name__ == '__main__':
 
         # PID
         #gain_list = [[26, 91, 80], [51, 88, 99], [0, 0, 1], [0, 0, 0], [75, 1, 0], [97, 0, 3]]
-        gain_list = [[22, 0, 0]]
+        gain_list = [[0, 11, 53]]
         
         # Create a Pool of workers
         with multiprocessing.Pool(processes=CORE_COUNT) as pool:
