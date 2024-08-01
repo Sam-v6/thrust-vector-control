@@ -21,12 +21,13 @@ class Controller:
         # psi_correction_prior  [rads]
         # error_prior           [rads]
 
-        # Swap theta to degrees (0 to 360)
+        # Swap theta to degrees and normalize it
         theta = np.degrees(theta) % 360                                  # [deg]
         psi_correction_prior = np.degrees(psi_correction_prior) % 360    # [deg]
         error_prior = np.degrees(error_prior) % 360                      # [deg]
 
         # Pick ideal thrust vector angle (in degrees)
+        # Guard against some integration shennanigans
         if dt <= 0:
             psi_correction = psi_correction_prior
             error = error_prior

@@ -11,7 +11,6 @@ import random
 import array
 import multiprocessing
 import time
-from functools import partial
 
 # Additional library imports
 import numpy as np
@@ -29,7 +28,7 @@ from deap import tools
 # Local imports
 from controller import Controller
 from ode_solver import OdeSolver
-from util import load_input_data, convert_to_normalized_degrees, flip_angle
+from util import load_input_data, bound_angles_180
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from lib.plotter.plotter import Plotter
 
@@ -70,6 +69,13 @@ def post_process_individual_trajectory(odeSolver, bounds):
         # Create the controller bounds
         odeSolver.controller_upper_bound.append(odeSolver.theta_history[i] + bounds)
         odeSolver.controller_lower_bound.append(odeSolver.theta_history[i] - bounds)
+
+        # Bound angles between -180 to 180
+        odeSolver.theta_history[i] = bound_angles_180(odeSolver.theta_history[i])
+        odeSolver.theta_error_history[i] = bound_angles_180(odeSolver.theta_error_history[i])
+        odeSolver.psi_history[i] = bound_angles_180(odeSolver.psi_history[i])
+        odeSolver.controller_upper_bound[i] = bound_angles_180(odeSolver.controller_upper_bound[i])
+        odeSolver.controller_lower_bound[i] = bound_angles_180(odeSolver.controller_lower_bound[i])
 
     # Post processing the height array
     h_array = np.array(odeSolver.h_history)
@@ -355,7 +361,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
     phase_map = {1: "Ascent",
                  2: "Ascent with Gravity Turn",
                  3: "Coast",
-                 4: "Descent",
+                 4: "Descent Burn",
                  5: "Free Fall"}
 
     # Create a figure and axes
@@ -418,7 +424,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
 def process_gains(gains, rocket_params, initial_conditions):
 
     # Create controller object
-    pidController = Controller(gains[0], gains[1], gains[2], rocket_params["DESIRED_FLIGHT_ANGLE"], rocket_params["TVC_BOUNDS"])
+    pidController = Controller(gains[0], gains[1], gains[2], rocket_params["DESIRED_THRUST_ANGLE"], rocket_params["TVC_BOUNDS"])
 
     # Generate individual trajectory
     odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
@@ -454,13 +460,13 @@ def biased_attr_kd():
 
 def evalOneMax(individual, rocket_params, initial_conditions):
     # Create controller object
-    pidController = Controller(individual[0], individual[1], individual[2], rocket_params["DESIRED_FLIGHT_ANGLE"], rocket_params["TVC_BOUNDS"])
+    pidController = Controller(individual[0], individual[1], individual[2], rocket_params["DESIRED_THRUST_ANGLE"], rocket_params["TVC_BOUNDS"])
 
     # Generate individual trajectory
     odeSolver = generate_individual_trajectory(pidController, rocket_params, initial_conditions)
 
     # Create individual plots for each trajectory
-    odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver)
+    odeSolver, last_index_positive = post_process_individual_trajectory(odeSolver, rocket_params["TVC_BOUNDS"])
     plot_individual_trajectory(odeSolver, last_index_positive)
 
     # Return

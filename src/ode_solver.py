@@ -162,7 +162,7 @@ class OdeSolver:
             self.phase = 4
             LIFT_CF = 0
             
-            # Determine TVC correction
+            # Determine TVC correction (some problem with the psi correction)
             self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
             #self.psi = self.theta
 
@@ -180,7 +180,7 @@ class OdeSolver:
             self.h_dot = self.v*np.sin(self.theta)
             self.x_dot = self.v*np.cos(self.theta)
 
-        # Post descent
+        # Free fall
         else:
 
             # Phase
@@ -204,7 +204,7 @@ class OdeSolver:
         # Determine if we have reached maximum height
         if (self.h - self.prior_h) < -1 and self.hmax_flag == False:
             self.hmax_flag = True
-            self.psi = convert_to_normalized_radians(np.degrees(normalize_radians(self.theta)) + 180)      # Make sure theta is normalized, convert to degrees, then add 180 to make sure thrust is now opposite of flight direction (retro prop for falling)
+            #self.psi = convert_to_normalized_radians(np.degrees(normalize_radians(self.theta)) + 180)      # Make sure theta is normalized, convert to degrees, then add 180 to make sure thrust is now opposite of flight direction (retro prop for falling)
 
         # Save values
         self.t_history.append(t)
