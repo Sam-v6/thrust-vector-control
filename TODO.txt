@@ -1,1 +1,2 @@
-- Eventually splice out some of stuff in driver into it's own files
+- See about optimizing for final angle and perhaps even propellant thrust? (requires multi objective optimization)
+- LQR and RL?? Profit

@@ -321,7 +321,7 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
 
     # Create a figure and axes
     fig, ax = plt.subplots(figsize=(10,8))
-    ax.plot(odeSolver.x_history, odeSolver.h_history, color='gray', linestyle="--")
+    #ax.plot(odeSolver.x_history, odeSolver.h_history, color='gray', linestyle="--")
 
     # Add vertical lines at phase change points
     for index in change_indexes:
@@ -332,12 +332,18 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
             # Flight
             flight_angle_vector_x = np.cos(odeSolver.theta_history[i] * np.pi / 180)
             flight_angle_vector_y = np.sin(odeSolver.theta_history[i] * np.pi / 180)
-            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=35, color='b', label='Flight Direction')    
+            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], flight_angle_vector_x, flight_angle_vector_y, scale=35, color='grey', label='Flight Direction')    
 
             # Plume
             plume_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
             plume_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
-            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], plume_angle_vector_x, plume_angle_vector_y, scale=35, color='r', label='Plume')
+
+            # Select color and plot quiver (red if firing, blue if off)
+            if odeSolver.F_history[i] == 0:
+                selected_color = "blue"
+            else:
+                selected_color = "red"
+            ax.quiver(odeSolver.x_history[i], odeSolver.h_history[i], plume_angle_vector_x, plume_angle_vector_y, scale=35, color=selected_color, label='Plume')
         
     ax.set_xlabel('Downrange Position (km)')
     ax.set_ylabel('Height (km)')
@@ -390,8 +396,14 @@ def plot_individual_trajectory(odeSolver, last_index_positive):
         plume_angle_vector_x = -np.cos(odeSolver.psi_history[i] * np.pi / 180)
         plume_angle_vector_y = -np.sin(odeSolver.psi_history[i] * np.pi / 180)
         plume_arrow.set_offsets((x_pos, y_pos))
-
         plume_arrow.set_UVC(plume_angle_vector_x, plume_angle_vector_y)
+
+        # Select color based on thrust
+        if odeSolver.F_history[i] == 0:
+            selected_color = "blue"
+        else:
+            selected_color = "red"
+        plume_arrow.set_color(selected_color)
 
         # Update the phase text
         phase = phase_map[odeSolver.phase_history[i]]
@@ -451,17 +463,13 @@ def process_gains(gains, rocket_params, initial_conditions):
     return values, max_down_range, max_height
 
 def biased_attr_kp():
-    return random.randint(0, 100) 
+    return random.randint(1, 100) 
 
 def biased_attr_ki():
-    # Randomly choose whether Ki should be 0 or non-zero
-    if random.random() < 0.3:
-        return 0
-    else:
-        return random.randint(1, 100)  # Non-zero value within bounds
+    return random.randint(1, 100)
 
 def biased_attr_kd():
-    return random.randint(0, 100)  
+    return random.randint(1, 100)  
 
 def evalOneMin(individual, rocket_params, initial_conditions):
     # Create controller object

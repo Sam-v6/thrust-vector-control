@@ -161,18 +161,37 @@ class OdeSolver:
             # Phase
             self.phase = 4
             LIFT_CF = 0
+
+            # Enable controller, have real engine on
+            if self.rocket_params["ENABLE_CONTROLLER"] == 1:
+                # Determine TVC correction (some problem with the psi correction)
+                self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
+
+                # Set times
+                self.descent_t = self.descent_t + self.dt
+
+                # Thrust and mass
+                self.mp_descent = self.mp_descent - (self.rocket_params["MDOT_DESCENT"] *  self.dt)
+                self.m = self.rocket_params["MASS_INIT"] - (self.rocket_params["MDOT_ASCENT"] * self.rocket_params["TIME_ASCENT_BURN"]) - (self.rocket_params["MDOT_DESCENT"] * self.descent_t) - self.rocket_params["MASS_PAYLOAD"]
+                self.F =self.rocket_params["THRUST_DESCENT"]
             
-            # Determine TVC correction (some problem with the psi correction)
-            self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
-            #self.psi = self.theta
+            # Controller disabled as far as actually applying correction and firing engine
+            else:
+                # Determine TVC correction
+                self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)
+                self.psi = self.theta
 
-            # Set times
-            self.descent_t = self.descent_t + self.dt
+                # Thrust and mass
+                self.m = self.rocket_params["MASS_INIT"] - (self.rocket_params["MDOT_ASCENT"] * self.rocket_params["TIME_ASCENT_BURN"]) - (self.rocket_params["MDOT_DESCENT"] * self.descent_t) - self.rocket_params["MASS_PAYLOAD"]
+                self.F = 0
 
-            # Thrust and mass
-            self.mp_descent = self.mp_descent - (self.rocket_params["MDOT_DESCENT"] *  self.dt)
-            self.m = self.rocket_params["MASS_INIT"] - (self.rocket_params["MDOT_ASCENT"] * self.rocket_params["TIME_ASCENT_BURN"]) - (self.rocket_params["MDOT_DESCENT"] * self.descent_t) - self.rocket_params["MASS_PAYLOAD"]
-            self.F =self.rocket_params["THRUST_DESCENT"]
+                # EOMS
+                self.v_dot = (self.F*np.cos(self.psi-self.theta))/self.m - (self.rocket_params["DRAG_CF"]*self.rho*self.v**2*self.rocket_params["PROFILE_AREA"])/(2*self.m) - self.g*np.sin(self.theta)
+                self.theta_dot = (self.F*np.sin(self.psi-self.theta))/(self.m*self.v) + (LIFT_CF*self.rho*self.v*self.rocket_params["PROFILE_AREA"])/(2*self.m) - (self.g*np.cos(self.theta))/self.v
+                self.h_dot = self.v*np.sin(self.theta)
+                self.x_dot = self.v*np.cos(self.theta)
+                
+
 
             # EOMS
             self.v_dot = (self.F*np.cos(self.psi-self.theta))/self.m - (self.rocket_params["DRAG_CF"]*self.rho*self.v**2*self.rocket_params["PROFILE_AREA"])/(2*self.m) - self.g*np.sin(self.theta)
