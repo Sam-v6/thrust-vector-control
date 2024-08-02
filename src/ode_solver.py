@@ -160,7 +160,8 @@ class OdeSolver:
 
             # Phase
             self.phase = 4
-            LIFT_CF = 0
+            LIFT_CF = 1
+            self.rocket_params["DRAG_CF"] = 2
 
             # Enable controller, have real engine on
             if self.rocket_params["ENABLE_CONTROLLER"] == 1:
@@ -204,7 +205,8 @@ class OdeSolver:
 
             # Phase
             self.phase = 5
-            LIFT_CF = 0
+            LIFT_CF = 1
+            self.rocket_params["DRAG_CF"] = 2
 
             # Determine TVC correction
             self.psi, self.theta_error = self.controller.get_psi_correction(self.theta, self.psi, self.theta_error, self.dt)

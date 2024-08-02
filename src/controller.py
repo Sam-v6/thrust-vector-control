@@ -50,7 +50,5 @@ class Controller:
             psi_correction = psi_correction % 360
             psi_correction = (psi_correction + 180) % 360
 
-            #print(f"Theta: {theta}, Setpoint: {self.setpoint}, Error: {error}, Psi: {psi_correction}")
-
         # Return (Swap error and psi_correction back to rads)
         return convert_to_normalized_radians(psi_correction), convert_to_normalized_radians(error)

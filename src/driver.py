@@ -67,8 +67,8 @@ def post_process_individual_trajectory(odeSolver, bounds):
         odeSolver.mp_ascent_history[i] = odeSolver.mp_ascent_history[i]/1e3       # [MT]
 
         # Create the controller bounds
-        odeSolver.controller_upper_bound.append(odeSolver.theta_history[i] + bounds)
-        odeSolver.controller_lower_bound.append(odeSolver.theta_history[i] - bounds)
+        odeSolver.controller_upper_bound.append(odeSolver.theta_history[i] + 180 + bounds)
+        odeSolver.controller_lower_bound.append(odeSolver.theta_history[i] + 180 - bounds)
 
         # Bound angles between -180 to 180
         odeSolver.theta_history[i] = bound_angles_180(odeSolver.theta_history[i])
