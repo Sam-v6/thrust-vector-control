@@ -555,7 +555,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # Input
-    ENABLE_GENETIC_ALGO = False
+    ENABLE_GENETIC_ALGO = True
     CORE_COUNT = int(multiprocessing.cpu_count()/2)
 
     #--------------------------------------------------

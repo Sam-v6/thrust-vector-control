@@ -1,0 +1,75 @@
+gen	nevals	avg     	std       	min     	max     	fitness                                                                                                                                                                                                                                    	genes                                                                                                                                                                                                                                                                                                              
+0  	10    	0.240195	0.00869895	0.228714	0.258266	[(0.23177768559090134,), (0.2287139896515445,), (0.2512709877103816,), (0.2392848183738785,), (0.2422910364273206,), (0.24189580857061704,), (0.23433099265879573,), (0.23244205506710167,), (0.2416743189925837,), (0.25826645639534807,)]	[Individual('b', [61, 16, 81]), Individual('b', [79, 52, 69]), Individual('b', [88, 3, 27]), Individual('b', [35, 91, 81]), Individual('b', [98, 26, 90]), Individual('b', [100, 84, 19]), Individual('b', [11, 54, 57]), Individual('b', [26, 93, 4]), Individual('b', [11, 52, 87]), Individual('b', [1, 9, 23])]
+1  	10    	0.238559	0.00755283	0.229053	0.249764	[(0.24331338865427563,), (0.22982687867178575,), (0.22905338788519666,), (0.24785289766981586,), (0.2392848183738785,), (0.23433099265879573,), (0.24976356458047638,), (0.23244205506710167,), (0.2472817619497794,), (0.23244205506710167,)]	[Individual('b', [79, 52, 81]), Individual('b', [35, 91, 69]), Individual('b', [79, 16, 69]), Individual('b', [61, 52, 81]), Individual('b', [35, 91, 81]), Individual('b', [11, 54, 57]), Individual('b', [0, 52, 87]), Individual('b', [26, 93, 4]), Individual('b', [61, 16, 0]), Individual('b', [26, 93, 4])] 
+2  	10    	0.236031	0.0100931 	0.227697	0.260152	[(0.22934389829096336,), (0.24541382850424076,), (0.23700909801084838,), (0.22877087725998027,), (0.2601518539466524,), (0.24331338865427563,), (0.22905338788519666,), (0.22905338788519666,), (0.22769670032335074,), (0.23049938456872338,)]	[Individual('b', [79, 91, 69]), Individual('b', [35, 16, 69]), Individual('b', [26, 16, 4]), Individual('b', [79, 93, 69]), Individual('b', [79, 16, 0]), Individual('b', [79, 52, 81]), Individual('b', [79, 16, 69]), Individual('b', [79, 16, 69]), Individual('b', [26, 91, 69]), Individual('b', [35, 93, 4])]
+3  	8     	0.232191	0.0050261 	0.227697	0.242903	[(0.22934389829096336,), (0.2379160403587559,), (0.22934389829096336,), (0.24290327576090362,), (0.22934389829096336,), (0.2379160403587559,), (0.22905338788519666,), (0.22769670032335074,), (0.22934389829096336,), (0.22905338788519666,)] 	[Individual('b', [79, 91, 69]), Individual('b', [26, 93, 69]), Individual('b', [79, 91, 69]), Individual('b', [35, 93, 0]), Individual('b', [79, 91, 69]), Individual('b', [26, 93, 69]), Individual('b', [79, 16, 69]), Individual('b', [26, 91, 69]), Individual('b', [79, 91, 69]), Individual('b', [79, 16, 69])]
+4  	8     	0.239057	0.0257696 	0.227697	0.31448 	[(0.22934389829096336,), (0.22905338788519666,), (0.22769670032335074,), (0.22769670032335074,), (0.24744064421591053,), (0.22905338788519666,), (0.22905338788519666,), (0.22769670032335074,), (0.3144798951373911,), (0.22905338788519666,)]	[Individual('b', [79, 91, 69]), Individual('b', [79, 16, 69]), Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69]), Individual('b', [0, 16, 69]), Individual('b', [79, 16, 69]), Individual('b', [79, 16, 69]), Individual('b', [26, 91, 69]), Individual('b', [79, 0, 69]), Individual('b', [79, 16, 69])] 
+5  	9     	0.227832	0.000407006	0.227697	0.229053	[(0.22769670032335074,), (0.22769670032335074,), (0.22769670032335074,), (0.22769670032335074,), (0.22769670032335074,), (0.22769670032335074,), (0.22769670032335074,), (0.22905338788519666,), (0.22769670032335074,), (0.22769670032335074,)]	[Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69]), Individual('b', [79, 16, 69]), Individual('b', [26, 91, 69]), Individual('b', [26, 91, 69])]
+Generation:  1
+Individual: 1 Fitness: 0.23177768559090134 Values: 61 16 81
+Individual: 2 Fitness: 0.2287139896515445 Values: 79 52 69
+Individual: 3 Fitness: 0.2512709877103816 Values: 88 3 27
+Individual: 4 Fitness: 0.2392848183738785 Values: 35 91 81
+Individual: 5 Fitness: 0.2422910364273206 Values: 98 26 90
+Individual: 6 Fitness: 0.24189580857061704 Values: 100 84 19
+Individual: 7 Fitness: 0.23433099265879573 Values: 11 54 57
+Individual: 8 Fitness: 0.23244205506710167 Values: 26 93 4
+Individual: 9 Fitness: 0.2416743189925837 Values: 11 52 87
+Individual: 10 Fitness: 0.25826645639534807 Values: 1 9 23
+Generation:  2
+Individual: 1 Fitness: 0.24331338865427563 Values: 79 52 81
+Individual: 2 Fitness: 0.22982687867178575 Values: 35 91 69
+Individual: 3 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 4 Fitness: 0.24785289766981586 Values: 61 52 81
+Individual: 5 Fitness: 0.2392848183738785 Values: 35 91 81
+Individual: 6 Fitness: 0.23433099265879573 Values: 11 54 57
+Individual: 7 Fitness: 0.24976356458047638 Values: 0 52 87
+Individual: 8 Fitness: 0.23244205506710167 Values: 26 93 4
+Individual: 9 Fitness: 0.2472817619497794 Values: 61 16 0
+Individual: 10 Fitness: 0.23244205506710167 Values: 26 93 4
+Generation:  3
+Individual: 1 Fitness: 0.22934389829096336 Values: 79 91 69
+Individual: 2 Fitness: 0.24541382850424076 Values: 35 16 69
+Individual: 3 Fitness: 0.23700909801084838 Values: 26 16 4
+Individual: 4 Fitness: 0.22877087725998027 Values: 79 93 69
+Individual: 5 Fitness: 0.2601518539466524 Values: 79 16 0
+Individual: 6 Fitness: 0.24331338865427563 Values: 79 52 81
+Individual: 7 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 8 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 9 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 10 Fitness: 0.23049938456872338 Values: 35 93 4
+Generation:  4
+Individual: 1 Fitness: 0.22934389829096336 Values: 79 91 69
+Individual: 2 Fitness: 0.2379160403587559 Values: 26 93 69
+Individual: 3 Fitness: 0.22934389829096336 Values: 79 91 69
+Individual: 4 Fitness: 0.24290327576090362 Values: 35 93 0
+Individual: 5 Fitness: 0.22934389829096336 Values: 79 91 69
+Individual: 6 Fitness: 0.2379160403587559 Values: 26 93 69
+Individual: 7 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 8 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 9 Fitness: 0.22934389829096336 Values: 79 91 69
+Individual: 10 Fitness: 0.22905338788519666 Values: 79 16 69
+Generation:  5
+Individual: 1 Fitness: 0.22934389829096336 Values: 79 91 69
+Individual: 2 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 3 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 4 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 5 Fitness: 0.24744064421591053 Values: 0 16 69
+Individual: 6 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 7 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 8 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 9 Fitness: 0.3144798951373911 Values: 79 0 69
+Individual: 10 Fitness: 0.22905338788519666 Values: 79 16 69
+Generation:  6
+Individual: 1 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 2 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 3 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 4 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 5 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 6 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 7 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 8 Fitness: 0.22905338788519666 Values: 79 16 69
+Individual: 9 Fitness: 0.22769670032335074 Values: 26 91 69
+Individual: 10 Fitness: 0.22769670032335074 Values: 26 91 69
+Best individual is Individual('b', [26, 91, 69]), (0.22769670032335074,)
+Duration: 301.80 seconds
