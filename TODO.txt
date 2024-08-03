@@ -1,2 +1,8 @@
-- See about optimizing for final angle and perhaps even propellant thrust? (requires multi objective optimization)
 - LQR and RL?? Profit
+
+
+Options
+- Could set a landing target in my own model
+- Implement left and right thrusters, have to add this into my own dynamics
+- Cost function of when to fire thrusters
+- Compare PID, LQR, and RL

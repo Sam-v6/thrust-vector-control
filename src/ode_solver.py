@@ -192,8 +192,6 @@ class OdeSolver:
                 self.h_dot = self.v*np.sin(self.theta)
                 self.x_dot = self.v*np.cos(self.theta)
                 
-
-
             # EOMS
             self.v_dot = (self.F*np.cos(self.psi-self.theta))/self.m - (self.rocket_params["DRAG_CF"]*self.rho*self.v**2*self.rocket_params["PROFILE_AREA"])/(2*self.m) - self.g*np.sin(self.theta)
             self.theta_dot = (self.F*np.sin(self.psi-self.theta))/(self.m*self.v) + (LIFT_CF*self.rho*self.v*self.rocket_params["PROFILE_AREA"])/(2*self.m) - (self.g*np.cos(self.theta))/self.v
